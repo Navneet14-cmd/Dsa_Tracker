@@ -1,0 +1,149 @@
+// DSA Tracker — Prisma schema
+// Postgres. Manual problem entry, no auto-scraping.
+// AI recommendations use pure LLM + web search (no knowledge graph tables needed).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// USER
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  problems  Problem[]
+  goals     Goal[]
+}
+
+// ---------------------------------------------------------------------------
+// TAXONOMY — predefined lists you seed once. Manual entry pulls from these
+// dropdowns so every problem stays consistent for dashboard aggregation.
+// ---------------------------------------------------------------------------
+
+model Topic {
+  id       String   @id @default(cuid())
+  name     String   @unique   // "Array", "Linked List", "Trees", "Graphs", "DP"...
+
+  patterns    PatternTopic[]
+  problems    ProblemTopic[]
+  goals       Goal[]
+}
+
+model Pattern {
+  id       String   @id @default(cuid())
+  name     String   @unique   // "Two Pointer", "Sliding Window", "Backtracking"...
+
+  topics    PatternTopic[]
+  problems  ProblemPattern[]
+}
+
+// A pattern can span multiple topics (e.g. "Two Pointer" applies to both
+// Array and Linked List), so this is many-to-many rather than a single FK.
+model PatternTopic {
+  topicId   String
+  patternId String
+
+  topic     Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  pattern   Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@id([topicId, patternId])
+}
+
+// ---------------------------------------------------------------------------
+// PROBLEM LOG — fully manual entry
+// ---------------------------------------------------------------------------
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Problem {
+  id              String     @id @default(cuid())
+  userId          String
+  leetcodeNumber  Int
+  title           String
+  difficulty      Difficulty
+  timeTakenMins   Int
+  dateSolved      DateTime
+  solvedAlone     Boolean          // true = "Without hints"
+  notes           String?
+  needsRevision   Boolean    @default(false)
+  confidence      Int              // 1-5
+  createdAt       DateTime   @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topics    ProblemTopic[]
+  patterns  ProblemPattern[]
+  revisions Revision[]
+
+  @@index([userId])
+  @@index([leetcodeNumber])
+}
+
+model ProblemTopic {
+  problemId String
+  topicId   String
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  topic   Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, topicId])
+}
+
+model ProblemPattern {
+  problemId String
+  patternId String
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  pattern Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, patternId])
+}
+
+// ---------------------------------------------------------------------------
+// GOALS — user sets a custom target per topic, dashboard tracks against it
+// ---------------------------------------------------------------------------
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  topicId     String
+  targetCount Int              // e.g. 70 for "Arrays"
+  createdAt   DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+}
+
+// ---------------------------------------------------------------------------
+// REVISION SYSTEM — spaced repetition schedule generated on log/flag
+// ---------------------------------------------------------------------------
+
+model Revision {
+  id            String    @id @default(cuid())
+  problemId     String
+  scheduledFor  DateTime
+  intervalDays  Int               // 1, 3, 7, 14, 30...
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@index([scheduledFor])
+}
