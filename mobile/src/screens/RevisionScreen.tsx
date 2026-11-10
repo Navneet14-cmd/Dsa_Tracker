@@ -7,23 +7,37 @@ import {
   TouchableOpacity, 
   ActivityIndicator, 
   RefreshControl,
-  Alert 
+  Alert,
+  Platform
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { api } from '../services/api';
+import { api, deviceTimeZone } from '../services/api';
 import { theme } from '../config/theme';
+
+type UpcomingBuckets = {
+  today: any[];
+  tomorrow: any[];
+  thisWeek: any[];
+  later: any[];
+};
+
+const EMPTY_UPCOMING: UpcomingBuckets = { today: [], tomorrow: [], thisWeek: [], later: [] };
+
+// Self-assessment sent with a completed review; the server uses it to pick the
+// next interval. Android alerts support at most 3 buttons, so "Hard" is iOS-only.
+type Rating = 'again' | 'hard' | 'good' | 'easy';
+const RATING_LABELS: Record<Rating, string> = {
+  again: 'Again (forgot)',
+  hard: 'Hard',
+  good: 'Good',
+  easy: 'Easy',
+};
+const RATING_OPTIONS: Rating[] =
+  Platform.OS === 'android' ? ['again', 'good', 'easy'] : ['again', 'hard', 'good', 'easy'];
 
 export default function RevisionScreen() {
   const [dueRevisions, setDueRevisions] = useState<any[]>([]);
-  const [upcoming, setUpcoming] = useState<{
-    tomorrow: any[];
-    in3Days: any[];
-    in7Days: any[];
-  }>({
-    tomorrow: [],
-    in3Days: [],
-    in7Days: [],
-  });
+  const [upcoming, setUpcoming] = useState<UpcomingBuckets>(EMPTY_UPCOMING);
 
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -35,11 +49,11 @@ export default function RevisionScreen() {
       
       const [dueResponse, upcomingResponse] = await Promise.all([
         api.get('/revisions/due'),
-        api.get('/revisions/upcoming'),
+        api.get('/revisions/upcoming', { params: { tz: deviceTimeZone() } }),
       ]);
 
       setDueRevisions(dueResponse.data.revisions || []);
-      setUpcoming(upcomingResponse.data.data || { tomorrow: [], in3Days: [], in7Days: [] });
+      setUpcoming({ ...EMPTY_UPCOMING, ...(upcomingResponse.data.data || {}) });
     } catch (error) {
       console.error('[Fetch Revisions Error]:', error);
     } finally {
@@ -60,10 +74,25 @@ export default function RevisionScreen() {
     fetchRevisions(false);
   };
 
-  const handleCompleteRevision = async (id: string) => {
+  const promptRating = (id: string) => {
+    Alert.alert(
+      'How did this review go?',
+      'Again restarts the schedule, Easy skips ahead.',
+      [
+        ...RATING_OPTIONS.map((rating) => ({
+          text: RATING_LABELS[rating],
+          onPress: () => handleCompleteRevision(id, rating),
+        })),
+        ...(Platform.OS === 'android' ? [] : [{ text: 'Cancel', style: 'cancel' as const }]),
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleCompleteRevision = async (id: string, rating: Rating) => {
     setIsCompletingId(id);
     try {
-      await api.post(`/revisions/${id}/complete`);
+      await api.post(`/revisions/${id}/complete`, { rating });
       // Silent refresh to update lists (no blocking alert for smooth UX)
       await fetchRevisions(false);
     } catch (error: any) {
@@ -190,7 +219,7 @@ export default function RevisionScreen() {
                     styles.completeButton,
                     (isCompleting || isAnyCompleting) && styles.disabledCompleteButton
                   ]}
-                  onPress={() => handleCompleteRevision(item.id)}
+                  onPress={() => promptRating(item.id)}
                   disabled={isCompleting || isAnyCompleting}
                 >
                   {isCompleting ? (
@@ -207,14 +236,17 @@ export default function RevisionScreen() {
         {/* Upcoming Review Timeline */}
         <Text style={styles.sectionTitle}>Upcoming Schedule</Text>
         
+        <Text style={styles.timelineHeader}>Later Today</Text>
+        {renderUpcomingList(upcoming.today)}
+
         <Text style={styles.timelineHeader}>Tomorrow</Text>
         {renderUpcomingList(upcoming.tomorrow)}
 
-        <Text style={styles.timelineHeader}>In 3 Days</Text>
-        {renderUpcomingList(upcoming.in3Days)}
+        <Text style={styles.timelineHeader}>This Week</Text>
+        {renderUpcomingList(upcoming.thisWeek)}
 
-        <Text style={styles.timelineHeader}>In 7 Days / Later</Text>
-        {renderUpcomingList(upcoming.in7Days)}
+        <Text style={styles.timelineHeader}>Later</Text>
+        {renderUpcomingList(upcoming.later)}
       </ScrollView>
     </View>
   );

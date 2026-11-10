@@ -12,7 +12,7 @@ import {
   Alert
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { api } from '../services/api';
+import { api, deviceTimeZone } from '../services/api';
 import { theme } from '../config/theme';
 
 export default function ProgressScreen() {
@@ -37,7 +37,7 @@ export default function ProgressScreen() {
   const fetchDashboard = async (showLoadingIndicator = false) => {
     try {
       if (showLoadingIndicator) setIsInitialLoading(true);
-      const response = await api.get('/dashboard/progress');
+      const response = await api.get('/dashboard/progress', { params: { tz: deviceTimeZone() } });
       const { topics: topicsData, difficultyStats: diffData } = response.data.data;
       
       setTopics(topicsData || []);
@@ -197,7 +197,10 @@ export default function ProgressScreen() {
                   <Text style={styles.topicName}>{item.topicName}</Text>
                   {hasGoal ? (
                     <TouchableOpacity onPress={() => openGoalModal(item)}>
-                      <Text style={styles.ratioText}>{solvedCount} / {targetCount}</Text>
+                      <Text style={styles.ratioText}>
+                        {solvedCount} / {targetCount}
+                        {typeof item.goalProgressPct === 'number' ? ` · ${Math.round(item.goalProgressPct)}%` : ''}
+                      </Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity onPress={() => openGoalModal(item)}>

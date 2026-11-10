@@ -8,7 +8,7 @@ import {
   TouchableOpacity, 
   ActivityIndicator 
 } from 'react-native';
-import { api } from '../services/api';
+import { api, AI_REQUEST_TIMEOUT_MS } from '../services/api';
 import { theme } from '../config/theme';
 
 export default function AIScreen() {
@@ -31,7 +31,7 @@ export default function AIScreen() {
     setIsAnalyzing(true);
     setAnalysisError(null);
     try {
-      const response = await api.post('/ai/weakness-analysis');
+      const response = await api.post('/ai/weakness-analysis', {}, { timeout: AI_REQUEST_TIMEOUT_MS });
       const { strengths: strList, weakAreas: weakList, recommendation: recText } = response.data;
       
       setStrengths(strList || []);
@@ -65,7 +65,11 @@ export default function AIScreen() {
     const minutesAvailable = Math.round(hours * 60);
 
     try {
-      const response = await api.post('/ai/study-plan', { minutesAvailable });
+      const response = await api.post(
+        '/ai/study-plan',
+        { minutesAvailable },
+        { timeout: AI_REQUEST_TIMEOUT_MS }
+      );
       const { tasks: planTasks, totalMinutes: planMinutes } = response.data;
       
       setTasks(planTasks || []);

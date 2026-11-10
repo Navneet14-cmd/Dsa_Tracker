@@ -12,7 +12,7 @@ import {
   Modal
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { api } from '../services/api';
+import { api, AI_REQUEST_TIMEOUT_MS } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { theme } from '../config/theme';
 
@@ -143,7 +143,11 @@ export default function LogFormScreen({ route, navigation }: any) {
         setIsLoading(false);
 
         try {
-          const aiResponse = await api.post('/ai/recommend', { problemId: createdId });
+          const aiResponse = await api.post(
+            '/ai/recommend',
+            { problemId: createdId },
+            { timeout: AI_REQUEST_TIMEOUT_MS }
+          );
           setAiData(aiResponse.data);
           setIsAILoading(false);
         } catch (aiError) {

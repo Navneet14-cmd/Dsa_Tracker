@@ -22,6 +22,20 @@ export const api = axios.create({
   },
 });
 
+// AI endpoints can take up to the server's AI_TIMEOUT_MS (60s by default,
+// including web searches), so they need a longer timeout than other calls.
+export const AI_REQUEST_TIMEOUT_MS = 90000;
+
+// Device IANA time zone (e.g. "Asia/Kolkata"), sent to endpoints that group by
+// calendar day (upcoming revisions, streaks, heatmap). Undefined => server uses UTC.
+export const deviceTimeZone = (): string | undefined => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 // Request interceptor to automatically attach authorization header
 api.interceptors.request.use(
   (config) => {
