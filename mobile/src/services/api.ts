@@ -1,0 +1,52 @@
+import axios from 'axios';
+import { Platform } from 'react-native';
+import { useAuthStore } from '../store/useAuthStore';
+
+// For local development:
+// - iOS simulators can connect directly to localhost
+// - Android emulators map localhost of host PC to 10.0.2.2
+// - Physical devices require configuring host PC's local LAN IP (e.g. http://192.168.1.50:3000)
+const DEFAULT_API_URL = Platform.select({
+  ios: 'http://localhost:3000',
+  android: 'http://10.0.2.2:3000',
+  default: 'http://localhost:3000',
+});
+
+const baseURL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
+
+export const api = axios.create({
+  baseURL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to automatically attach authorization header
+api.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to catch 401 Unauthorized errors and force log out
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    // If the server returns 401 Unauthorized, automatically log out
+    if (error.response && error.response.status === 401) {
+      console.warn('[API Interceptor] Received 401 Unauthorized. Clearing auth store...');
+      await useAuthStore.getState().clearAuth();
+    }
+    return Promise.reject(error);
+  }
+);
