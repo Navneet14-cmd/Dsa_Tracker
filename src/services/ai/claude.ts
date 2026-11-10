@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 import { config } from '../../lib/config';
 import { HttpError } from '../../lib/errors';
@@ -23,6 +22,34 @@ export interface ClaudeRequest<T extends z.ZodType> {
   webSearch?: boolean;
   effort?: 'low' | 'medium' | 'high';
   maxTokens?: number;
+}
+
+// JSON Schema keywords structured outputs don't support. The response is
+// re-validated with the full zod schema, so dropping them loses nothing.
+const UNSUPPORTED_KEYWORDS = new Set([
+  '$schema', 'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf',
+  'minLength', 'maxLength', 'minItems', 'maxItems', 'uniqueItems',
+]);
+
+function stripUnsupported(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(stripUnsupported);
+  if (node && typeof node === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(node)) {
+      if (!UNSUPPORTED_KEYWORDS.has(k)) out[k] = stripUnsupported(v);
+    }
+    if (out.type === 'object') out.additionalProperties = false;
+    return out;
+  }
+  return node;
+}
+
+/** Structured-output format for a zod schema (enums kept as real enums). */
+export function outputFormat(schema: z.ZodType) {
+  return {
+    type: 'json_schema' as const,
+    schema: stripUnsupported(z.toJSONSchema(schema, { target: 'draft-2020-12' })) as Record<string, unknown>,
+  };
 }
 
 // Server tools can return stop_reason "pause_turn"; resume a bounded number of times.
@@ -49,7 +76,7 @@ export async function callClaude<T extends z.ZodType>(req: ClaudeRequest<T>): Pr
           max_tokens: req.maxTokens ?? 16_000,
           system: req.system,
           messages,
-          output_config: { effort: req.effort ?? 'medium', format: zodOutputFormat(req.schema) },
+          output_config: { effort: req.effort ?? 'medium', format: outputFormat(req.schema) },
           ...(req.webSearch
             ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: config.AI_WEB_SEARCH_MAX_USES }] }
             : {}),
@@ -70,22 +97,7 @@ export async function callClaude<T extends z.ZodType>(req: ClaudeRequest<T>): Pr
         throw new HttpError(502, 'The AI response was cut off', 'AI_BAD_RESPONSE');
       }
 
-      // With web search the reply has several text blocks (a preamble before
-      // the searches, citations, ...). The structured JSON is the final one.
-      const text = response.content.filter((b) => b.type === 'text').at(-1)?.text;
-      if (!text) throw new HttpError(502, 'The AI assistant returned no answer', 'AI_BAD_RESPONSE');
-
-      let json: unknown;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        throw new HttpError(502, 'The AI assistant returned malformed JSON', 'AI_BAD_RESPONSE');
-      }
-      const parsed = req.schema.safeParse(json);
-      if (!parsed.success) {
-        throw new HttpError(502, 'The AI response did not match the expected format', 'AI_BAD_RESPONSE');
-      }
-      return parsed.data;
+      return parseFinalJson(response.content, req.schema);
     }
     throw new HttpError(504, 'The AI assistant took too many steps', 'AI_TIMEOUT');
   } catch (err) {
@@ -93,6 +105,31 @@ export async function callClaude<T extends z.ZodType>(req: ClaudeRequest<T>): Pr
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * With web search the reply has several text blocks (a preamble before the
+ * searches, text around citations, ...). The structured JSON is the final
+ * text block; parse it and validate it with the zod schema.
+ */
+export function parseFinalJson<T extends z.ZodType>(
+  content: ReadonlyArray<{ type: string; text?: string }>,
+  schema: T,
+): z.infer<T> {
+  const text = content.filter((b) => b.type === 'text').at(-1)?.text;
+  if (!text) throw new HttpError(502, 'The AI assistant returned no answer', 'AI_BAD_RESPONSE');
+
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new HttpError(502, 'The AI assistant returned malformed JSON', 'AI_BAD_RESPONSE');
+  }
+  const parsed = schema.safeParse(json);
+  if (!parsed.success) {
+    throw new HttpError(502, 'The AI response did not match the expected format', 'AI_BAD_RESPONSE');
+  }
+  return parsed.data;
 }
 
 function toHttpError(err: unknown, aborted: boolean): HttpError {
