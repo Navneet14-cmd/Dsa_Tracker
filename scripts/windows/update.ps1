@@ -12,7 +12,7 @@ Invoke-Native git @('pull', '--ff-only')
 
 Write-Step 'Installing dependencies (npm ci)'
 # Stop the API first so Windows does not lock files inside node_modules (Prisma engine DLL).
-try { & $pm2 stop dsa-tracker-api | Out-Null } catch { }  # not running yet is fine
+$null = Invoke-Capture $pm2 @('stop', $ApiName)  # not running yet is fine
 Invoke-Native npm @('ci', '--include=dev', '--no-audit', '--no-fund')
 
 Write-Step 'Updating the database'
@@ -26,12 +26,10 @@ New-Item -ItemType Directory -Force -Path (Join-Path $RepoRoot 'logs') | Out-Nul
 Invoke-Native $pm2 @('startOrReload', 'ecosystem.config.js', '--update-env')
 Invoke-Native $pm2 @('save')
 
-Start-Sleep -Seconds 3
-$port = Get-EnvValue 'PORT'
-if (-not $port) { $port = '3000' }
-try {
-    $health = Invoke-RestMethod "http://localhost:$port/health" -TimeoutSec 10
-    Write-Host "Updated. Health: $($health.status)" -ForegroundColor Green
-} catch {
-    Write-Warning 'Health check failed. See: pm2 logs dsa-tracker-api --lines 50'
+Move-ApiToBootTask
+
+if (Wait-Health 30) {
+    Write-Host 'Updated. Health: ok' -ForegroundColor Green
+} else {
+    Write-Warning "Health check failed. See: pm2 logs $ApiName --lines 50"
 }

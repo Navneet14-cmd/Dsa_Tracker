@@ -5,10 +5,16 @@ This guide turns a Windows 10/11 laptop into a small home server that runs
 then talks to the laptop over your Wi-Fi, or from anywhere through Tailscale.
 
 ```
- phone (Expo app) ──Wi-Fi / Tailscale──▶ laptop :3000  DSA Tracker API (pm2)
-                                                 ├──▶ :5432  Postgres (Windows service)
-                                                 └──▶ :11434 Ollama (qwen2.5:7b)
+ phone (Expo app) ──Wi-Fi / Tailscale──▶ laptop :3000  DSA Tracker API (pm2)        task "DSA Tracker API"
+                                                 ├──▶ localhost:5432   Postgres     Windows service
+                                                 └──▶ localhost:11434  Ollama       task "DSA Tracker Ollama"
 ```
+
+Only port 3000 is reachable from other devices. Postgres and Ollama only listen on
+localhost, and the API runs on the same machine, so they never need to be exposed.
+
+**Short version:** do steps 1–4. Then run `start.ps1`,
+`install-startup-task.ps1` (Admin) and `check.ps1`. Do steps 6–11 once.
 
 Run every command in **PowerShell**. Commands marked **(Admin)** need an
 elevated window: right-click Start, then choose *Terminal (Admin)*.
@@ -90,21 +96,39 @@ log in, so also turn on Windows auto-login, or log in once after every reboot.
 
 ## 3. Ollama and the model
 
-```powershell
-ollama pull qwen2.5:7b
-ollama run qwen2.5:7b "Say hi in five words"
-```
+Install Ollama (step 1). You don't need to pull a model by hand: `setup.ps1`
+(step 4) chooses one based on how much RAM the laptop has and pulls it.
 
-- `qwen2.5:7b` is about a 4.7 GB download and needs **about 16 GB RAM** to run comfortably.
-- **8 GB RAM laptops:** use `ollama pull qwen2.5:3b` or `ollama pull llama3.2:3b`,
-  and set `OLLAMA_MODEL` to match in `.env` (step 4).
-- The Windows installer adds a tray app that starts Ollama when you **log in**.
-  The startup task in step 8 starts `ollama serve` at **boot** instead, so you
-  don't need to log in. If the tray app complains at login that port 11434 is in
-  use, turn it off under Settings > Apps > Startup > Ollama. The boot task
-  already runs the server.
+| RAM | Model `setup.ps1` picks | Download |
+|---|---|---|
+| 16 GB or more | `qwen2.5:7b` | ~4.7 GB |
+| less than 16 GB | `qwen2.5:3b` | ~1.9 GB |
 
-If Ollama is down or slow, the API automatically answers with the built-in
+To check the RAM: `[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)`.
+Windows reports a little less than what's installed, so the cut-off is 15 GiB
+and a "16 GB" laptop counts as 16 GB. To use a different model, pass
+`-OllamaModel llama3.2:3b` (or any model) to `setup.ps1`.
+
+**You don't need `OLLAMA_HOST` or a firewall rule for port 11434.** The API
+reaches Ollama at `OLLAMA_BASE_URL=http://localhost:11434` on the same machine.
+Keep Ollama's default of listening on 127.0.0.1, so nobody else on your
+network can use it.
+
+**Boot vs. login.** The Ollama installer adds a tray app that starts Ollama only
+when you *log in*. The API starts at *boot*. Step 8 adds a startup task that
+runs `ollama serve` at boot, before the API and without anyone logging in. It
+also turns off the tray app's auto-start, because both would try to use port
+11434. If you'd rather turn the tray app off yourself, or turn it back on later:
+
+- Settings > Apps > Startup > **Ollama**: Off (or On). Or:
+- Press Win+R, type `shell:startup`, then delete or restore `Ollama.lnk`.
+  `install-startup-task.ps1` moves it to `%APPDATA%\DSA-Tracker\disabled-startup\`.
+
+You can still open the Ollama app by hand. If it complains that port 11434 is
+in use, that's the boot task's server, and you can ignore the message. The API
+keeps using that server.
+
+If Ollama is down or slow, the API answers AI requests with the built-in
 "Smart rules" provider, so the app keeps working.
 
 ## 4. Get the code and configure it
@@ -121,23 +145,26 @@ With Docker (option B), use
 
 `setup.ps1` does the following:
 
-1. Creates `.env` from `.env.example` with a random `JWT_SECRET`, `NODE_ENV=production`
-   and `AI_PROVIDER=ollama`.
-2. Runs `npm ci`, `prisma generate`, `prisma migrate deploy` and
-   `prisma db seed` (topics and patterns; safe to repeat).
-3. Builds the app and pulls the Ollama model if it's missing.
+1. Creates `.env` from `.env.example` with a random `JWT_SECRET` and `NODE_ENV=production`.
+   If `.env` already exists, it's kept.
+2. Always writes `AI_PROVIDER=ollama` (override with `-AiProvider rules|anthropic`),
+   `OLLAMA_MODEL` (chosen from RAM, see step 3; override with `-OllamaModel`),
+   and `DATABASE_URL` when you pass `-DatabaseUrl`.
+3. Runs `npm ci`, `prisma generate`, `prisma migrate deploy` and
+   `prisma db seed` (topics and patterns; safe to repeat), then builds.
+4. Pulls the model with `ollama pull`, starting Ollama first if it isn't
+   running. If Ollama isn't installed, it prints a clear warning and skips this
+   step. Install Ollama and re-run `setup.ps1` later.
 
-It never overwrites an existing `.env`, so you can re-run it safely. Other
-options: `-AiProvider rules|ollama|anthropic` and `-OllamaModel qwen2.5:3b`.
-These only take effect when `.env` is first created; after that, edit `.env`
-directly.
+It's safe to re-run at any time.
 
 Settings in `.env` you might change (each one is explained in `.env.example`):
 
 | Variable | Default | Notes |
 |---|---|---|
-| `AI_PROVIDER` | `ollama` (from setup) | `rules`, `ollama` or `anthropic` |
-| `OLLAMA_MODEL` | `qwen2.5:7b` | must match `ollama list` |
+| `AI_PROVIDER` | `ollama` (written by setup) | `rules`, `ollama` or `anthropic` |
+| `OLLAMA_MODEL` | `qwen2.5:7b` or `qwen2.5:3b` (by RAM) | must match `ollama list` |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | leave it: Ollama runs on this machine |
 | `OLLAMA_TIMEOUT_MS` | `150000` | raise it on slow CPUs |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | `0.0.0.0` makes it reachable from the LAN |
 | `ANTHROPIC_API_KEY` | empty | only for `AI_PROVIDER=anthropic` |
@@ -160,6 +187,11 @@ pm2 logs dsa-tracker-api --lines 20 --nostream
 Useful pm2 commands: `pm2 status`, `pm2 logs dsa-tracker-api`,
 `pm2 restart dsa-tracker-api`, `pm2 stop dsa-tracker-api`. Logs are written to
 `.\logs\`.
+
+Until you do step 8, the API runs inside your login session, so **signing out
+stops it**. Locking the screen (Win+L) is fine. After step 8, `start.ps1` and
+`update.ps1` hand pm2 over to the startup task, and the API keeps running after
+you sign out.
 
 ## 6. Give the laptop a fixed LAN IP
 
@@ -200,8 +232,8 @@ New-NetFirewallRule -DisplayName "DSA Tracker API (LAN)" -Direction Inbound -Pro
 New-NetFirewallRule -DisplayName "DSA Tracker API (Tailscale)" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -RemoteAddress 100.64.0.0/10
 ```
 
-Don't open ports 5432 (Postgres) or 11434 (Ollama). Only the API needs to be
-reachable.
+Don't open ports 5432 (Postgres) or 11434 (Ollama), and don't set `OLLAMA_HOST`.
+The API talks to both over localhost, so only port 3000 needs to be reachable.
 
 To check from the phone, open `http://<laptop-ip>:3000/health` in its browser.
 
@@ -209,31 +241,47 @@ To check from the phone, open `http://<laptop-ip>:3000/health` in its browser.
 
 This uses **Task Scheduler** rather than `pm2-windows-startup` or
 `pm2-installer`, which have been unreliable on recent Windows and Node
-versions. A startup task runs before anyone logs in, survives Node upgrades and
-is easy to inspect.
+versions. Startup tasks run before anyone logs in, survive Node upgrades and
+are easy to inspect.
 
 ```powershell
 cd $HOME\Dsa-Tracker
 .\scripts\windows\install-startup-task.ps1
 ```
 
-This registers a task called **"DSA Tracker"**. It runs at startup, as your user,
-without storing your password. The task runs `scripts\windows\boot.ps1`, which:
+This registers two tasks. Both run at startup as your user, without storing
+your password, so they use your `~\.ollama` models and `~\.pm2` process list:
 
-1. Starts `ollama serve` if `AI_PROVIDER=ollama` and Ollama isn't already running.
-2. Waits for Postgres.
-3. Runs `pm2 resurrect`, which brings back the process list saved by
-   `start.ps1` / `update.ps1`.
+| Task | When | What |
+|---|---|---|
+| **DSA Tracker Ollama** | at boot | `scripts\windows\ollama-serve.ps1`: runs `ollama serve`; exits quietly if port 11434 is already in use |
+| **DSA Tracker API** | boot + 45 s | `scripts\windows\boot.ps1`: waits for Postgres and Ollama, then `pm2 resurrect` |
+
+The script also:
+
+- Sets both tasks to *normal* priority. Task Scheduler's default is below
+  normal, which makes Ollama noticeably slower.
+- Restarts a task up to 5 times if it fails.
+- Turns off the Ollama tray app's auto-start, as explained in step 3. Pass
+  `-KeepOllamaTray` to leave the tray app alone.
+- Removes the single "DSA Tracker" task from older versions of this guide.
 
 Test it without rebooting, then reboot and test again:
 
 ```powershell
 pm2 kill
-Start-ScheduledTask -TaskName "DSA Tracker"
-Start-Sleep 20; pm2 status; Get-Content .\logs\boot.log -Tail 20
+Start-ScheduledTask -TaskName "DSA Tracker Ollama"
+Start-ScheduledTask -TaskName "DSA Tracker API"
+Start-Sleep 30
+.\scripts\windows\check.ps1
 ```
 
-To remove it: `Unregister-ScheduledTask -TaskName "DSA Tracker" -Confirm:$false`.
+Logs are in `logs\boot.log` (API task) and `logs\ollama.err.log` (Ollama writes
+its log to stderr). To see the tasks: `Get-ScheduledTask -TaskName "DSA Tracker*" | Get-ScheduledTaskInfo`.
+
+To remove them:
+`Unregister-ScheduledTask -TaskName "DSA Tracker Ollama","DSA Tracker API" -Confirm:$false`.
+Then turn the tray app back on (step 3) if you want it.
 
 ## 9. Keep the laptop awake when plugged in (Admin)
 
@@ -303,21 +351,75 @@ Transport Security exception. Alternatively, put the API behind HTTPS with
 ```powershell
 cd $HOME\Dsa-Tracker
 .\scripts\windows\update.ps1
+.\scripts\windows\check.ps1
 ```
 
 This runs `git pull --ff-only`, `npm ci`, `prisma generate`,
-`prisma migrate deploy` and `prisma db seed`, then rebuilds and runs
-`pm2 startOrReload`, `pm2 save` and a health check. It refuses to run if
+`prisma migrate deploy` and `prisma db seed`, then rebuilds. It restarts the
+API with `pm2 startOrReload` and `pm2 save`, hands pm2 to the startup task, and
+runs a health check. It refuses to run if
 tracked files have local edits. `.env` is untracked, so it's never touched.
 
 ## Troubleshooting
+
+**Start here:**
+
+```powershell
+cd $HOME\Dsa-Tracker
+.\scripts\windows\check.ps1
+```
+
+It prints PASS or FAIL for each of these, in order: Node, Postgres connection,
+migrations, the pm2 process, `/health`, Ollama, the model, and `/ai/status`.
+Each FAIL line says what to run.
+
+**pm2 and the API:**
+
+```powershell
+pm2 status                                     # dsa-tracker-api should be "online"
+pm2 logs dsa-tracker-api --lines 50 --nostream # recent output, including errors
+pm2 restart dsa-tracker-api --update-env       # after editing .env
+Get-Content .\logs\boot.log -Tail 30           # what the boot task did
+```
+
+**Ollama:**
+
+```powershell
+curl.exe http://localhost:11434/api/tags       # lists installed models; an error = Ollama not running
+ollama list
+Get-Content .\logs\ollama.err.log -Tail 30     # server log when started by the boot task
+Start-ScheduledTask -TaskName "DSA Tracker Ollama"
+```
+
+Use `curl.exe`, not `curl`. In Windows PowerShell 5.1, `curl` is an alias for
+`Invoke-WebRequest`, which behaves differently.
+
+**Which backend is the phone using?** The phone talks to whatever backend
+`EXPO_PUBLIC_API_URL` in `mobile/.env` points at. That value is baked in when
+Expo starts.
+
+- **Pointed at the laptop:** backend changes you make on the Mac don't reach the
+  phone until you commit, push, and run `.\scripts\windows\update.ps1` on the
+  laptop.
+- **To test Mac changes right away:** point `mobile/.env` at the Mac
+  temporarily (`EXPO_PUBLIC_API_URL=http://<mac-ip>:3000`), run `npm run dev` on
+  the Mac, and restart Expo with `npx expo start -c`. Switch back afterwards.
+  The two backends have separate databases, so problems you log against one
+  don't show up in the other.
+
+**Script errors:** run `powershell.exe -File .\scripts\windows\lint.ps1`. It
+parse-checks every script with Windows PowerShell's own parser, and runs
+PSScriptAnalyzer if it's installed.
+
 
 | Symptom | Check |
 |---|---|
 | Phone can't connect | `/health` from the phone's browser; `Get-NetConnectionProfile` (must be Private); firewall rule; same Wi-Fi; correct IP in `mobile/.env`; restart Expo with `-c` |
 | `EADDRINUSE` in logs | Something else is on port 3000: `Get-NetTCPConnection -LocalPort 3000` |
-| AI answers say "Smart rules" | Ollama is down or the model isn't pulled: `ollama list`, `curl.exe http://localhost:11434/api/tags`; the app's AI tab shows the provider status |
+| AI answers say "Smart rules" | Ollama is down or the model isn't pulled: `ollama list`, `curl.exe http://localhost:11434/api/tags`; the app's AI tab shows the provider status. Also check `AI_PROVIDER=ollama` in `.env`, then `pm2 restart dsa-tracker-api --update-env` |
+| Ollama tray app shows an error at login | Port 11434 is already used by the boot task: turn off the tray auto-start (step 3) |
+| API stops when you sign out | Run `install-startup-task.ps1` (step 8), then `start.ps1` again |
 | AI is very slow | Use a 3B model, or raise `OLLAMA_TIMEOUT_MS`; the first request after boot loads the model (slow) |
 | `P1001: Can't reach database` | `Get-Service postgresql*`; check DATABASE_URL in `.env` |
 | `npm ci` fails with EPERM | The API is holding files open: `pm2 stop dsa-tracker-api`, then retry (update.ps1 does this) |
-| Nothing after reboot | `Get-Content .\logs\boot.log -Tail 50`; `Get-ScheduledTaskInfo -TaskName "DSA Tracker"` |
+| Nothing after reboot | `Get-Content .\logs\boot.log -Tail 50`; `Get-ScheduledTask -TaskName "DSA Tracker*" \| Get-ScheduledTaskInfo` (LastTaskResult 0 = ok) |
