@@ -17,7 +17,7 @@ export const getProgressDashboard = async (req: Request, res: Response) => {
   const { tz } = req.query as unknown as z.infer<typeof TimeZoneQuery>;
   const now = new Date();
 
-  const [topics, problems, revisionsDue] = await Promise.all([
+  const [topics, problems, attempts, revisionsDue] = await Promise.all([
     prisma.topic.findMany({
       select: {
         id: true,
@@ -37,6 +37,10 @@ export const getProgressDashboard = async (req: Request, res: Response) => {
         dateSolved: true,
         topics: { select: { topicId: true } },
       },
+    }),
+    prisma.problemAttempt.findMany({
+      where: { problem: { userId } },
+      select: { attemptedAt: true },
     }),
     prisma.revision.count({ where: { completed: false, scheduledFor: { lte: now }, problem: { userId } } }),
   ]);
@@ -59,6 +63,11 @@ export const getProgressDashboard = async (req: Request, res: Response) => {
       confidenceByTopic.get(topicId)!.push(p.confidence);
     }
     const day = dayKey(p.dateSolved, tz);
+    perDay.set(day, (perDay.get(day) ?? 0) + 1);
+  }
+  // Re-attempts count as activity for streaks and the heatmap.
+  for (const a of attempts) {
+    const day = dayKey(a.attemptedAt, tz);
     perDay.set(day, (perDay.get(day) ?? 0) + 1);
   }
 
@@ -103,6 +112,7 @@ export const getProgressDashboard = async (req: Request, res: Response) => {
         overallPct: targetSum > 0 ? round1((cappedSolved / targetSum) * 100) : null,
       },
       revisionsDue,
+      totalAttempts: attempts.length,
     },
   });
 };

@@ -8,7 +8,9 @@ import {
   IdParams,
   UpdateProblemInput,
   AddToRevisionSchema,
+  CreateAttemptInput,
 } from '../schemas';
+import { deleteAttempt, listAttempts, logAttempt } from '../services/attemptService';
 import { z } from 'zod';
 import {
   addToRevision,
@@ -23,6 +25,7 @@ const problemInclude = {
   topics: { select: { topic: { select: { id: true, name: true } } } },
   patterns: { select: { pattern: { select: { id: true, name: true } } } },
   revisions: { orderBy: { scheduledFor: 'asc' } },
+  attempts: { orderBy: { attemptedAt: 'desc' } },
 } satisfies Prisma.ProblemInclude;
 
 /** 400 listing any topic/pattern ids that don't exist. */
@@ -41,7 +44,8 @@ async function assertTaxonomyExists(topicIds: string[] = [], patternIds: string[
 
 /**
  * One entry per LeetCode problem per user. Logging the same number again
- * returns 409 with the existing entry's id so the client can edit it instead.
+ * returns 409 DUPLICATE_PROBLEM with the existing entry's id; the client then
+ * offers to log a re-attempt (POST /problems/:id/attempts) or open the entry.
  * The user row lock serializes concurrent logs for the same user.
  */
 async function assertNotDuplicate(tx: Tx, userId: string, leetcodeNumber: number, exceptId?: string) {
@@ -55,7 +59,7 @@ async function assertNotDuplicate(tx: Tx, userId: string, leetcodeNumber: number
   if (dup) {
     throw new HttpError(
       409,
-      `You've already logged LeetCode #${leetcodeNumber} ("${dup.title}"). Edit the existing entry instead.`,
+      `You've already logged LeetCode #${leetcodeNumber} ("${dup.title}"). Log a re-attempt or open the existing entry.`,
       'DUPLICATE_PROBLEM',
       { existingProblemId: dup.id },
     );
@@ -211,17 +215,20 @@ export const getProblemRevisionHistory = async (req: Request, res: Response) => 
       confidence: true,
       needsRevision: true,
       revisions: { orderBy: [{ scheduledFor: 'asc' }, { createdAt: 'asc' }] },
+      attempts: { orderBy: { attemptedAt: 'desc' } },
     },
   });
   if (!problem) throw notFound('Problem');
 
-  const { revisions, ...summary } = problem;
+  const { revisions, attempts, ...summary } = problem;
   const completed = revisions.filter((r) => r.completed);
   res.status(200).json({
     status: 'success',
     problem: summary,
     revisions,
+    attempts,
     stats: {
+      attemptCount: attempts.length,
       completedCount: completed.length,
       pending: revisions.find((r) => !r.completed) ?? null,
       lastCompletedAt: completed.at(-1)?.completedAt ?? null,
@@ -234,6 +241,26 @@ export const getProblemRevisionHistory = async (req: Request, res: Response) => 
       },
     },
   });
+};
+
+/** POST /problems/:id/attempts — log a re-solve of an existing problem. */
+export const createAttempt = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const result = await logAttempt(id, req.userId!, req.body as CreateAttemptInput);
+  res.status(201).json({ status: 'success', ...result });
+};
+
+/** GET /problems/:id/attempts */
+export const getAttempts = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  res.status(200).json({ status: 'success', attempts: await listAttempts(id, req.userId!) });
+};
+
+/** DELETE /problems/:id/attempts/:attemptId */
+export const removeAttempt = async (req: Request, res: Response) => {
+  const { id, attemptId } = req.params as unknown as { id: string; attemptId: string };
+  await deleteAttempt(id, attemptId, req.userId!);
+  res.status(200).json({ status: 'success', message: 'Attempt deleted' });
 };
 
 /** GET /topics */

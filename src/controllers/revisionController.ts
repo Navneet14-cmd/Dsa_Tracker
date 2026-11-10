@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { dayKey, daysBetween } from '../lib/dates';
 import { CompleteRevisionInput, IdParams, TimeZoneQuery } from '../schemas';
 import { completeRevision as completeRevisionTx } from '../services/revisionService';
+import { previewIntervals } from '../services/srs';
 
 const revisionProblem = {
   problem: {
@@ -11,14 +12,21 @@ const revisionProblem = {
   },
 } as const;
 
-/** GET /revisions/due — pending reviews scheduled at or before now. */
+/**
+ * GET /revisions/due — pending reviews scheduled at or before now. Each one
+ * includes nextIntervals: the interval (days, or null = graduates) each
+ * rating would schedule, for the rating picker.
+ */
 export const getDueRevisions = async (req: Request, res: Response) => {
   const revisions = await prisma.revision.findMany({
     where: { completed: false, scheduledFor: { lte: new Date() }, problem: { userId: req.userId } },
     include: revisionProblem,
     orderBy: { scheduledFor: 'asc' },
   });
-  res.status(200).json({ status: 'success', revisions });
+  res.status(200).json({
+    status: 'success',
+    revisions: revisions.map((r) => ({ ...r, nextIntervals: previewIntervals(r.intervalDays) })),
+  });
 };
 
 /**

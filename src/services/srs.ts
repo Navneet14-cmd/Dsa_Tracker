@@ -66,3 +66,13 @@ export function firstReviewDate(dateSolved: Date, now: Date = new Date(), days: 
   const base = dateSolved.getTime() > now.getTime() ? dateSolved : now;
   return addDays(base, days);
 }
+
+/** Next interval for each rating, for showing choices before completing. */
+export function previewIntervals(currentIntervalDays: number): Record<Lowercase<Rating>, number | null> {
+  return {
+    again: nextInterval(currentIntervalDays, 'AGAIN'),
+    hard: nextInterval(currentIntervalDays, 'HARD'),
+    good: nextInterval(currentIntervalDays, 'GOOD'),
+    easy: nextInterval(currentIntervalDays, 'EASY'),
+  };
+}

@@ -57,49 +57,57 @@ export async function removeFromRevision(problemId: string, userId: string) {
 }
 
 /**
- * Completes a pending revision and schedules the next one.
- * The conditional update (completed = false) makes a second, concurrent
- * completion of the same revision fail with 409 instead of creating two
- * follow-up reviews.
+ * Completes a pending revision and schedules the next one, inside an
+ * existing transaction. The conditional update (completed = false) makes a
+ * second, concurrent completion of the same revision fail with 409 instead
+ * of creating two follow-up reviews.
  */
+export async function completeRevisionInTx(
+  tx: Tx,
+  revision: { id: string; problemId: string; intervalDays: number },
+  currentConfidence: number,
+  input: CompleteRevisionInput,
+  now: Date = new Date(),
+) {
+  const rating: RevisionRating =
+    input.rating ?? (input.confidence !== undefined ? ratingFromConfidence(input.confidence) : 'GOOD');
+
+  const claimed = await tx.revision.updateMany({
+    where: { id: revision.id, completed: false },
+    data: { completed: true, completedAt: now, rating },
+  });
+  if (claimed.count === 0) {
+    throw new HttpError(409, 'Revision is already completed', 'ALREADY_COMPLETED');
+  }
+
+  const intervalDays = nextInterval(revision.intervalDays, rating);
+  const confidence = nextConfidence(currentConfidence, rating, input.confidence);
+
+  const nextRevision =
+    intervalDays === null
+      ? null
+      : await tx.revision.create({
+          data: { problemId: revision.problemId, scheduledFor: addDays(now, intervalDays), intervalDays },
+        });
+
+  const problem = await tx.problem.update({
+    where: { id: revision.problemId },
+    // Graduating off the ladder takes the problem out of revision.
+    data: { confidence, needsRevision: nextRevision !== null },
+    select: { id: true, confidence: true, needsRevision: true },
+  });
+
+  const completed = await tx.revision.findUniqueOrThrow({ where: { id: revision.id } });
+  return { revision: completed, nextRevision, problem, graduated: nextRevision === null };
+}
+
 export async function completeRevision(revisionId: string, userId: string, input: CompleteRevisionInput) {
-  const now = new Date();
   return prisma.$transaction(async (tx) => {
     const revision = await tx.revision.findFirst({
       where: { id: revisionId, problem: { userId } },
-      include: { problem: { select: { id: true, confidence: true } } },
+      include: { problem: { select: { confidence: true } } },
     });
     if (!revision) throw notFound('Revision');
-
-    const rating: RevisionRating =
-      input.rating ?? (input.confidence !== undefined ? ratingFromConfidence(input.confidence) : 'GOOD');
-
-    const claimed = await tx.revision.updateMany({
-      where: { id: revisionId, completed: false },
-      data: { completed: true, completedAt: now, rating },
-    });
-    if (claimed.count === 0) {
-      throw new HttpError(409, 'Revision is already completed', 'ALREADY_COMPLETED');
-    }
-
-    const intervalDays = nextInterval(revision.intervalDays, rating);
-    const confidence = nextConfidence(revision.problem.confidence, rating, input.confidence);
-
-    const nextRevision =
-      intervalDays === null
-        ? null
-        : await tx.revision.create({
-            data: { problemId: revision.problemId, scheduledFor: addDays(now, intervalDays), intervalDays },
-          });
-
-    const problem = await tx.problem.update({
-      where: { id: revision.problemId },
-      // Graduating off the ladder takes the problem out of revision.
-      data: { confidence, needsRevision: nextRevision !== null },
-      select: { id: true, confidence: true, needsRevision: true },
-    });
-
-    const completed = await tx.revision.findUniqueOrThrow({ where: { id: revisionId } });
-    return { revision: completed, nextRevision, problem, graduated: nextRevision === null };
+    return completeRevisionInTx(tx, revision, revision.problem.confidence, input);
   });
 }

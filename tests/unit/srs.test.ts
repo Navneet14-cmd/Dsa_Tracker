@@ -55,3 +55,12 @@ describe('spaced repetition rules', () => {
     expect(firstReviewDate(future, now).toISOString()).toBe('2026-06-16T20:00:00.000Z');
   });
 });
+
+describe('previewIntervals', () => {
+  it('previews every rating from each rung of the ladder', async () => {
+    const { previewIntervals } = await import('../../src/services/srs');
+    expect(previewIntervals(1)).toEqual({ again: 1, hard: 1, good: 3, easy: 7 });
+    expect(previewIntervals(7)).toEqual({ again: 1, hard: 7, good: 14, easy: 30 });
+    expect(previewIntervals(14)).toEqual({ again: 1, hard: 14, good: 30, easy: null });
+  });
+});

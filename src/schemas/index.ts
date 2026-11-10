@@ -117,6 +117,17 @@ export const GetProblemsQuerySchema = z.object({
 });
 export type GetProblemsQuery = z.infer<typeof GetProblemsQuerySchema>;
 
+export const CreateAttemptSchema = z.object({
+  attemptedAt: problemFields.dateSolved.optional(),
+  timeTakenMins: problemFields.timeTakenMins,
+  solvedAlone: problemFields.solvedAlone,
+  confidence: problemFields.confidence,
+  notes: problemFields.notes,
+});
+export type CreateAttemptInput = z.infer<typeof CreateAttemptSchema>;
+
+export const AttemptParams = z.object({ id: id('id'), attemptId: id('attemptId') });
+
 // ---------------------------------------------------------------------------
 // Revisions
 // ---------------------------------------------------------------------------

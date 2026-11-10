@@ -88,11 +88,29 @@ model Problem {
   topics    ProblemTopic[]
   patterns  ProblemPattern[]
   revisions Revision[]
+  attempts  ProblemAttempt[]
 
   @@index([userId])
   @@index([leetcodeNumber])
   @@index([userId, leetcodeNumber])
   @@index([userId, dateSolved])
+}
+
+// A later re-solve of an already-logged problem. The Problem row keeps the
+// first solve; each re-attempt is recorded here and counts toward streaks.
+model ProblemAttempt {
+  id            String   @id @default(cuid())
+  problemId     String
+  attemptedAt   DateTime
+  timeTakenMins Int
+  solvedAlone   Boolean
+  confidence    Int              // 1-5
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId, attemptedAt])
 }
 
 model ProblemTopic {

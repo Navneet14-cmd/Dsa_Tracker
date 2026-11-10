@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import {
   addProblemToRevision,
+  createAttempt,
+  getAttempts,
+  removeAttempt,
   createProblem,
   deleteProblem,
   getProblemById,
@@ -13,6 +16,8 @@ import { validate } from '../middleware/validate';
 import { asyncHandler } from '../lib/errors';
 import {
   AddToRevisionSchema,
+  AttemptParams,
+  CreateAttemptSchema,
   CreateProblemSchema,
   GetProblemsQuerySchema,
   IdParams,
@@ -32,5 +37,10 @@ router.delete('/:id', validate({ params: IdParams }), asyncHandler(deleteProblem
 router.get('/:id/revisions', validate({ params: IdParams }), asyncHandler(getProblemRevisionHistory));
 router.post('/:id/revision', validate({ params: IdParams, body: AddToRevisionSchema }), asyncHandler(addProblemToRevision));
 router.delete('/:id/revision', validate({ params: IdParams }), asyncHandler(removeProblemFromRevision));
+
+// Re-attempts of an already-logged problem
+router.get('/:id/attempts', validate({ params: IdParams }), asyncHandler(getAttempts));
+router.post('/:id/attempts', validate({ params: IdParams, body: CreateAttemptSchema }), asyncHandler(createAttempt));
+router.delete('/:id/attempts/:attemptId', validate({ params: AttemptParams }), asyncHandler(removeAttempt));
 
 export default router;
