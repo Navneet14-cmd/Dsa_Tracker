@@ -22,13 +22,13 @@ async function installedModel(): Promise<string | null> {
   }
 }
 
-const model = await installedModel();
-
-describe.skipIf(!model)(`ollama live smoke test (${model ?? 'not running'})`, () => {
-  it('returns valid recommendations from the shortlist', { timeout: 300_000 }, async () => {
+describe('ollama live smoke test', () => {
+  it('returns valid recommendations from the shortlist (skipped when Ollama is not running)', { timeout: 300_000 }, async (t) => {
+    const model = await installedModel();
+    if (!model) return t.skip();
     const ctx = seededContext();
     const candidates = rankCandidates(justSolvedTwoPointer, ctx);
-    const provider = createOllamaProvider({ baseUrl, model: model!, timeoutMs: 280_000 });
+    const provider = createOllamaProvider({ baseUrl, model, timeoutMs: 280_000 });
     const out = await provider.recommend({ justSolved: justSolvedTwoPointer, ctx, candidates });
     const allowed = new Set(candidates.slice(0, 12).map((c) => c.problem.number));
     expect(out.recommendations.length).toBeGreaterThan(0);

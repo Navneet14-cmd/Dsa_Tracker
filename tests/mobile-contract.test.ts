@@ -49,11 +49,15 @@ describe('mobile app contract', () => {
     const dup = await request(app).post('/problems').set(headers).send(payload);
     expect(dup.status).toBe(409);
     expect(dup.body.message).toMatch(/already logged/);
+    expect(dup.body).toMatchObject({ code: 'DUPLICATE_PROBLEM', existingProblemId: problemId });
+    // "Open existing": GET /problems/:id -> { problem } for the edit form
+    expect((await request(app).get(`/problems/${problemId}`).set(headers)).body.problem).toMatchObject({ id: problemId, leetcodeNumber: 1 });
 
     // ...then POST /ai/recommend { problemId } -> { recommendations[{number,title,reason}], overallReason }
     const rec = await request(app).post('/ai/recommend').set(headers).send({ problemId });
     expect(rec.body.overallReason).toEqual(expect.any(String));
     for (const r of rec.body.recommendations) expect(r).toMatchObject({ number: expect.any(Number), title: expect.any(String), reason: expect.any(String) });
+    expect(rec.body.source).toMatch(/^(rules|ollama|anthropic)$/); // SourceBadge
 
     // LogFormScreen edit: PATCH with the full payload
     const patched = await request(app).patch(`/problems/${problemId}`).set(headers).send({ ...payload, title: 'Two Sum!' });
@@ -77,6 +81,8 @@ describe('mobile app contract', () => {
     const rev = due.body.revisions[0];
     expect(rev).toMatchObject({ id: expect.any(String), scheduledFor: expect.any(String), intervalDays: 1 });
     expect(rev.problem).toMatchObject({ leetcodeNumber: 1, title: 'Two Sum!', difficulty: 'EASY' });
+    // RatingModal shows nextIntervals[rating] (null = graduates)
+    expect(rev.nextIntervals).toEqual({ again: 1, hard: 1, good: 3, easy: 7 });
     const done = await request(app).post(`/revisions/${rev.id}/complete`).set(headers).send({ rating: 'good' });
     expect(done.status).toBe(200);
     const upcoming = await request(app).get('/revisions/upcoming').query({ tz: 'Asia/Kolkata' }).set(headers);
@@ -84,11 +90,29 @@ describe('mobile app contract', () => {
     const all = [...upcoming.body.data.today, ...upcoming.body.data.tomorrow, ...upcoming.body.data.thisWeek, ...upcoming.body.data.later];
     expect(all[0]).toMatchObject({ id: expect.any(String), scheduledFor: expect.any(String), intervalDays: 3, problem: { leetcodeNumber: 1 } });
 
+    // "Log re-attempt" from the duplicate alert, then the edit screen's history
+    const reattempt = await request(app)
+      .post(`/problems/${problemId}/attempts`)
+      .set(headers)
+      .send({ attemptedAt: new Date().toISOString(), timeTakenMins: 9, solvedAlone: true, confidence: 4, notes: null });
+    expect(reattempt.status).toBe(201);
+    expect(reattempt.body).toMatchObject({ problem: { confidence: 4 }, completedRevision: null });
+    const history = (await request(app).get(`/problems/${problemId}/revisions`).set(headers)).body;
+    expect(history.attempts[0]).toMatchObject({ attemptedAt: expect.any(String), timeTakenMins: 9, confidence: 4, solvedAlone: true });
+    expect(history.revisions.find((r: { completed: boolean }) => r.completed)).toMatchObject({ completedAt: expect.any(String), rating: 'GOOD', intervalDays: 1 });
+    expect(history.stats).toMatchObject({ completedCount: 1, attemptCount: 1 });
+
+    // AIScreen status line
+    expect((await request(app).get('/ai/status').set(headers)).body).toMatchObject({ provider: expect.any(String), reachable: expect.any(Boolean) });
+
     // ProgressScreen: GET /dashboard/progress?tz -> data.{topics, difficultyStats}; POST /goals
     const goal = await request(app).post('/goals').set(headers).send({ topicId: topics[0].id, targetCount: 4 });
     expect(goal.status).toBe(200);
     const progress = (await request(app).get('/dashboard/progress').query({ tz: 'Asia/Kolkata' }).set(headers)).body.data;
     expect(progress.difficultyStats).toEqual({ easy: 1, medium: 0, hard: 0, total: 1 });
+    // ActivityCard
+    expect(progress.streak).toMatchObject({ current: expect.any(Number), longest: expect.any(Number) });
+    expect(progress.heatmap.at(-1)).toEqual({ date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), count: 2 });
     expect(progress.topics.find((t: { topicId: string }) => t.topicId === topics[0].id)).toMatchObject({
       topicName: topics[0].name,
       solvedCount: 1,
