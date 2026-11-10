@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
   Text, 
@@ -8,7 +9,10 @@ import {
   TouchableOpacity, 
   ActivityIndicator 
 } from 'react-native';
-import { api, AI_REQUEST_TIMEOUT_MS } from '../services/api';
+import { api, AI_REQUEST_TIMEOUT_MS, AI_SOURCE_LABELS, AiSource } from '../services/api';
+import SourceBadge from '../components/SourceBadge';
+
+type SourceInfo = { source?: AiSource; fallbackFrom?: AiSource };
 import { theme } from '../config/theme';
 
 export default function AIScreen() {
@@ -27,6 +31,20 @@ export default function AIScreen() {
   const [plannerError, setPlannerError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Which provider answered each section, and the configured provider's status
+  const [analysisSource, setAnalysisSource] = useState<SourceInfo>({});
+  const [planSource, setPlanSource] = useState<SourceInfo>({});
+  const [aiStatus, setAiStatus] = useState<{ provider: AiSource; model: string | null; reachable: boolean } | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      api
+        .get('/ai/status')
+        .then((res) => setAiStatus(res.data))
+        .catch(() => setAiStatus(null));
+    }, [])
+  );
+
   const handleAnalyzeProgress = async () => {
     setIsAnalyzing(true);
     setAnalysisError(null);
@@ -37,6 +55,7 @@ export default function AIScreen() {
       setStrengths(strList || []);
       setWeakAreas(weakList || []);
       setRecommendation(recText || '');
+      setAnalysisSource({ source: response.data.source, fallbackFrom: response.data.fallbackFrom });
     } catch (error: any) {
       console.error('[AI Progress Analysis Error]:', error);
       const apiMsg = error.response?.data?.message || 'AI service is temporarily unavailable. Please try again.';
@@ -74,6 +93,7 @@ export default function AIScreen() {
       
       setTasks(planTasks || []);
       setTotalMinutes(planMinutes !== undefined ? planMinutes : 0);
+      setPlanSource({ source: response.data.source, fallbackFrom: response.data.fallbackFrom });
     } catch (error: any) {
       console.error('[AI Study Plan Generation Error]:', error);
       const apiMsg = error.response?.data?.message || 'AI planning service is temporarily unavailable. Please try again.';
@@ -100,6 +120,16 @@ export default function AIScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {aiStatus && (
+          <Text style={styles.statusLine}>
+            AI: {AI_SOURCE_LABELS[aiStatus.provider] ?? aiStatus.provider}
+            {aiStatus.model ? ` (${aiStatus.model})` : ''} ·{' '}
+            <Text style={{ color: aiStatus.reachable ? theme.colors.success : theme.colors.danger }}>
+              {aiStatus.reachable ? 'online' : 'offline'}
+            </Text>
+            {!aiStatus.reachable && aiStatus.provider !== 'rules' ? ' · Smart rules will answer' : ''}
+          </Text>
+        )}
         {/* Section 1: Progress & Weakness Analysis */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Performance Insights</Text>
@@ -128,6 +158,7 @@ export default function AIScreen() {
           {/* Analysis Results Display */}
           {(strengths.length > 0 || weakAreas.length > 0 || recommendation !== '') && (
             <View style={styles.resultsContainer}>
+              <SourceBadge {...analysisSource} />
               {strengths.length > 0 && (
                 <View style={[styles.insightCard, { borderLeftColor: theme.colors.success }]}>
                   <Text style={[styles.insightTitle, { color: theme.colors.success }]}>Strengths</Text>
@@ -209,6 +240,7 @@ export default function AIScreen() {
           {/* Study Plan Results Display */}
           {totalMinutes !== null && (
             <View style={styles.resultsContainer}>
+              <SourceBadge {...planSource} />
               {tasks.length === 0 ? (
                 <View style={styles.emptyPlanCard}>
                   <Text style={styles.emptyPlanText}>
@@ -242,6 +274,13 @@ export default function AIScreen() {
 }
 
 const styles = StyleSheet.create({
+  statusLine: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    textAlign: 'right',
+    marginBottom: theme.spacing.sm,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,

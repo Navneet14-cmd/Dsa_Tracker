@@ -14,6 +14,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { api, deviceTimeZone } from '../services/api';
 import { theme } from '../config/theme';
+import ActivityCard, { HeatmapDay, Streak } from '../components/ActivityCard';
 
 export default function ProgressScreen() {
   const [topics, setTopics] = useState<any[]>([]);
@@ -23,6 +24,9 @@ export default function ProgressScreen() {
     hard: 0,
     total: 0,
   });
+
+  const [streak, setStreak] = useState<Streak | undefined>(undefined);
+  const [heatmap, setHeatmap] = useState<HeatmapDay[]>([]);
 
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -42,6 +46,8 @@ export default function ProgressScreen() {
       
       setTopics(topicsData || []);
       setDifficultyStats(diffData || { easy: 0, medium: 0, hard: 0, total: 0 });
+      setStreak(response.data.data.streak);
+      setHeatmap(response.data.data.heatmap || []);
     } catch (error) {
       console.error('[Fetch Dashboard Progress Error]:', error);
     } finally {
@@ -125,6 +131,12 @@ export default function ProgressScreen() {
           />
         }
       >
+        {/* Streak + 12-week activity */}
+        <View style={styles.dashboardHeader}>
+          <Text style={styles.headerTitle}>Activity</Text>
+        </View>
+        <ActivityCard streak={streak} heatmap={heatmap} />
+
         {/* Dashboard Header */}
         <View style={styles.dashboardHeader}>
           <Text style={styles.headerTitle}>Performance Summary</Text>

@@ -15,6 +15,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { api, AI_REQUEST_TIMEOUT_MS } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { theme } from '../config/theme';
+import SourceBadge from '../components/SourceBadge';
+import ProblemHistory from '../components/ProblemHistory';
+
+const formatDays = (d: number) => `${d} ${d === 1 ? 'day' : 'days'}`;
 
 export default function LogFormScreen({ route, navigation }: any) {
   const problem = route.params?.problem;
@@ -163,10 +167,65 @@ export default function LogFormScreen({ route, navigation }: any) {
         }
       }
     } catch (error: any) {
-      console.error('[Form Submit Failure]:', error);
       setIsLoading(false);
+      const body = error.response?.data;
+      if (!isEditMode && error.response?.status === 409 && body?.code === 'DUPLICATE_PROBLEM' && body.existingProblemId) {
+        promptDuplicate(body.existingProblemId, body.message, payload);
+        return;
+      }
+      console.error('[Form Submit Failure]:', error);
       const apiMsg = error.response?.data?.message || 'An unexpected network error occurred.';
       Alert.alert('Error', apiMsg);
+    }
+  };
+
+  // Already logged: offer to record this solve as a re-attempt, or open the entry.
+  const promptDuplicate = (existingId: string, message: string, payload: any) => {
+    Alert.alert(
+      'Already logged',
+      message || `You've already logged #${payload.leetcodeNumber}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open existing', onPress: () => openExisting(existingId) },
+        { text: 'Log re-attempt', onPress: () => logReattempt(existingId, payload) },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const openExisting = async (existingId: string) => {
+    setIsLoading(true);
+    try {
+      const res = await api.get(`/problems/${existingId}`);
+      setIsLoading(false);
+      navigation.replace('LogForm', { problem: res.data.problem });
+    } catch (err: any) {
+      setIsLoading(false);
+      Alert.alert('Error', err.response?.data?.message || 'Could not open the existing entry.');
+    }
+  };
+
+  const logReattempt = async (existingId: string, payload: any) => {
+    setIsLoading(true);
+    try {
+      const res = await api.post(`/problems/${existingId}/attempts`, {
+        attemptedAt: payload.dateSolved,
+        timeTakenMins: payload.timeTakenMins,
+        solvedAlone: payload.solvedAlone,
+        confidence: payload.confidence,
+        notes: payload.notes,
+      });
+      setIsLoading(false);
+      const { completedRevision, nextRevision } = res.data;
+      const detail = completedRevision
+        ? nextRevision
+          ? `Your due review was completed too. Next review in ${formatDays(nextRevision.intervalDays)}.`
+          : 'Your due review was completed too, and this problem has graduated.'
+        : `Confidence updated to ${res.data.problem.confidence}/5.`;
+      Alert.alert('Re-attempt logged', detail, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    } catch (err: any) {
+      setIsLoading(false);
+      Alert.alert('Error', err.response?.data?.message || 'Failed to log the re-attempt.');
     }
   };
 
@@ -393,6 +452,13 @@ export default function LogFormScreen({ route, navigation }: any) {
         </TouchableOpacity>
 
         {isEditMode && (
+          <>
+            <Text style={[styles.label, styles.historyLabel]}>History</Text>
+            <ProblemHistory problemId={problem.id} />
+          </>
+        )}
+
+        {isEditMode && (
           <TouchableOpacity 
             style={[styles.deleteButton, isLoading && styles.disabledSubmitButton]} 
             onPress={handleDelete}
@@ -414,11 +480,12 @@ export default function LogFormScreen({ route, navigation }: any) {
             {isAILoading ? (
               <View style={styles.modalLoadingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={styles.modalLoadingText}>Consulting Claude for next recommendations...</Text>
+                <Text style={styles.modalLoadingText}>Finding your next problems...</Text>
               </View>
             ) : (
               <ScrollView contentContainerStyle={styles.modalScrollContainer}>
                 <Text style={styles.modalTitle}>AI Recommendations</Text>
+                <SourceBadge source={aiData?.source} fallbackFrom={aiData?.fallbackFrom} />
                 
                 {aiData?.overallReason && (
                   <Text style={styles.overallReasonText}>{aiData.overallReason}</Text>
@@ -487,6 +554,10 @@ const styles = StyleSheet.create({
   },
   disabledInput: {
     opacity: 0.6,
+  },
+  historyLabel: {
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.sm,
   },
   segmentedControl: {
     flexDirection: 'row',

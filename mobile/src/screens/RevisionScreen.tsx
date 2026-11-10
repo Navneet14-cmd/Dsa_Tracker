@@ -8,11 +8,11 @@ import {
   ActivityIndicator, 
   RefreshControl,
   Alert,
-  Platform
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api, deviceTimeZone } from '../services/api';
 import { theme } from '../config/theme';
+import RatingModal, { Rating } from '../components/RatingModal';
 
 type UpcomingBuckets = {
   today: any[];
@@ -23,18 +23,6 @@ type UpcomingBuckets = {
 
 const EMPTY_UPCOMING: UpcomingBuckets = { today: [], tomorrow: [], thisWeek: [], later: [] };
 
-// Self-assessment sent with a completed review; the server uses it to pick the
-// next interval. Android alerts support at most 3 buttons, so "Hard" is iOS-only.
-type Rating = 'again' | 'hard' | 'good' | 'easy';
-const RATING_LABELS: Record<Rating, string> = {
-  again: 'Again (forgot)',
-  hard: 'Hard',
-  good: 'Good',
-  easy: 'Easy',
-};
-const RATING_OPTIONS: Rating[] =
-  Platform.OS === 'android' ? ['again', 'good', 'easy'] : ['again', 'hard', 'good', 'easy'];
-
 export default function RevisionScreen() {
   const [dueRevisions, setDueRevisions] = useState<any[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingBuckets>(EMPTY_UPCOMING);
@@ -42,6 +30,8 @@ export default function RevisionScreen() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCompletingId, setIsCompletingId] = useState<string | null>(null);
+  // The due revision whose rating picker is open
+  const [ratingTarget, setRatingTarget] = useState<any | null>(null);
 
   const fetchRevisions = async (showLoadingIndicator = false) => {
     try {
@@ -74,19 +64,10 @@ export default function RevisionScreen() {
     fetchRevisions(false);
   };
 
-  const promptRating = (id: string) => {
-    Alert.alert(
-      'How did this review go?',
-      'Again restarts the schedule, Easy skips ahead.',
-      [
-        ...RATING_OPTIONS.map((rating) => ({
-          text: RATING_LABELS[rating],
-          onPress: () => handleCompleteRevision(id, rating),
-        })),
-        ...(Platform.OS === 'android' ? [] : [{ text: 'Cancel', style: 'cancel' as const }]),
-      ],
-      { cancelable: true }
-    );
+  const handleSelectRating = (rating: Rating) => {
+    const target = ratingTarget;
+    setRatingTarget(null);
+    if (target) handleCompleteRevision(target.id, rating);
   };
 
   const handleCompleteRevision = async (id: string, rating: Rating) => {
@@ -219,7 +200,7 @@ export default function RevisionScreen() {
                     styles.completeButton,
                     (isCompleting || isAnyCompleting) && styles.disabledCompleteButton
                   ]}
-                  onPress={() => promptRating(item.id)}
+                  onPress={() => setRatingTarget(item)}
                   disabled={isCompleting || isAnyCompleting}
                 >
                   {isCompleting ? (
@@ -248,6 +229,14 @@ export default function RevisionScreen() {
         <Text style={styles.timelineHeader}>Later</Text>
         {renderUpcomingList(upcoming.later)}
       </ScrollView>
+
+      <RatingModal
+        visible={ratingTarget !== null}
+        title={ratingTarget ? `#${ratingTarget.problem.leetcodeNumber} - ${ratingTarget.problem.title}` : undefined}
+        intervals={ratingTarget?.nextIntervals}
+        onSelect={handleSelectRating}
+        onCancel={() => setRatingTarget(null)}
+      />
     </View>
   );
 }

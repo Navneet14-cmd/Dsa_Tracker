@@ -22,9 +22,17 @@ export const api = axios.create({
   },
 });
 
-// AI endpoints can take up to the server's AI_TIMEOUT_MS (60s by default,
-// including web searches), so they need a longer timeout than other calls.
-export const AI_REQUEST_TIMEOUT_MS = 90000;
+// AI endpoints can be slow: a local model (Ollama on a laptop CPU) may take
+// up to the server's OLLAMA_TIMEOUT_MS (150s) before it falls back to rules.
+export const AI_REQUEST_TIMEOUT_MS = 180000;
+
+// Which provider produced an AI answer (the `source` field of /ai/* responses).
+export type AiSource = 'rules' | 'ollama' | 'anthropic';
+export const AI_SOURCE_LABELS: Record<AiSource, string> = {
+  rules: 'Smart rules',
+  ollama: 'Local AI',
+  anthropic: 'Claude',
+};
 
 // Device IANA time zone (e.g. "Asia/Kolkata"), sent to endpoints that group by
 // calendar day (upcoming revisions, streaks, heatmap). Undefined => server uses UTC.
