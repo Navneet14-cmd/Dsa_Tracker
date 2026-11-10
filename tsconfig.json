@@ -13,5 +13,5 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "prisma/**/*.ts", "tests/**/*", "vitest.config.ts"]
+  "include": ["src/**/*", "prisma/**/*.ts", "tests/**/*", "vitest.config.mts"]
 }
