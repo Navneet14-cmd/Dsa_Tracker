@@ -7,3 +7,6 @@ dist/
 # Backup of the old nested mobile/ git repo (pre-monorepo)
 .mobile-git-backup/
 coverage/
+
+# pm2 logs
+logs/
