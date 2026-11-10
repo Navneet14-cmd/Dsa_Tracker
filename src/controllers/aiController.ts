@@ -1,24 +1,30 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { RecommendSchema, StudyPlanSchema } from '../schemas';
-import * as ai from '../services/ai';
+import type { AiService } from '../services/ai';
 
-/** POST /ai/recommend { problemId } */
-export const recommend = async (req: Request, res: Response) => {
-  const { problemId } = req.body as z.infer<typeof RecommendSchema>;
-  const result = await ai.recommend(req.userId!, problemId);
-  res.status(200).json({ status: 'success', ...result });
-};
+export function createAiController(ai: AiService) {
+  return {
+    /** GET /ai/status */
+    status: async (_req: Request, res: Response) => {
+      res.status(200).json({ status: 'success', ...(await ai.status()) });
+    },
 
-/** POST /ai/weakness-analysis */
-export const analyzeWeakness = async (req: Request, res: Response) => {
-  const result = await ai.analyzeWeakness(req.userId!);
-  res.status(200).json({ status: 'success', ...result });
-};
+    /** POST /ai/recommend { problemId } */
+    recommend: async (req: Request, res: Response) => {
+      const { problemId } = req.body as z.infer<typeof RecommendSchema>;
+      res.status(200).json({ status: 'success', ...(await ai.recommend(req.userId!, problemId)) });
+    },
 
-/** POST /ai/study-plan { minutesAvailable } */
-export const generateStudyPlan = async (req: Request, res: Response) => {
-  const { minutesAvailable } = req.body as z.infer<typeof StudyPlanSchema>;
-  const result = await ai.generateStudyPlan(req.userId!, minutesAvailable);
-  res.status(200).json({ status: 'success', ...result });
-};
+    /** POST /ai/weakness-analysis */
+    analyzeWeakness: async (req: Request, res: Response) => {
+      res.status(200).json({ status: 'success', ...(await ai.analyzeWeakness(req.userId!)) });
+    },
+
+    /** POST /ai/study-plan { minutesAvailable } */
+    generateStudyPlan: async (req: Request, res: Response) => {
+      const { minutesAvailable } = req.body as z.infer<typeof StudyPlanSchema>;
+      res.status(200).json({ status: 'success', ...(await ai.generateStudyPlan(req.userId!, minutesAvailable)) });
+    },
+  };
+}

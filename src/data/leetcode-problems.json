@@ -1,0 +1,2071 @@
+[
+ {
+  "number": 217,
+  "title": "Contains Duplicate",
+  "difficulty": "EASY",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 242,
+  "title": "Valid Anagram",
+  "difficulty": "EASY",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "String",
+   "Hash Table",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 1,
+  "title": "Two Sum",
+  "difficulty": "EASY",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 49,
+  "title": "Group Anagrams",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "String",
+   "Hash Table",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 347,
+  "title": "Top K Frequent Elements",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Top-K/Heap",
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table",
+   "Heap",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 238,
+  "title": "Product of Array Except Self",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Prefix Sum"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 36,
+  "title": "Valid Sudoku",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 128,
+  "title": "Longest Consecutive Sequence",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 125,
+  "title": "Valid Palindrome",
+  "difficulty": "EASY",
+  "patterns": [
+   "Two Pointer"
+  ],
+  "topics": [
+   "String"
+  ]
+ },
+ {
+  "number": 167,
+  "title": "Two Sum II - Input Array Is Sorted",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Two Pointer",
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 15,
+  "title": "3Sum",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Two Pointer"
+  ],
+  "topics": [
+   "Array",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 11,
+  "title": "Container With Most Water",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Two Pointer",
+   "Greedy"
+  ],
+  "topics": [
+   "Array",
+   "Greedy"
+  ]
+ },
+ {
+  "number": 42,
+  "title": "Trapping Rain Water",
+  "difficulty": "HARD",
+  "patterns": [
+   "Two Pointer",
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "Array",
+   "Stack",
+   "DP"
+  ]
+ },
+ {
+  "number": 121,
+  "title": "Best Time to Buy and Sell Stock",
+  "difficulty": "EASY",
+  "patterns": [
+   "Sliding Window"
+  ],
+  "topics": [
+   "Array",
+   "DP"
+  ]
+ },
+ {
+  "number": 3,
+  "title": "Longest Substring Without Repeating Characters",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Sliding Window",
+   "Hash Map"
+  ],
+  "topics": [
+   "String",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 424,
+  "title": "Longest Repeating Character Replacement",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Sliding Window"
+  ],
+  "topics": [
+   "String",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 567,
+  "title": "Permutation in String",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Sliding Window",
+   "Hash Map"
+  ],
+  "topics": [
+   "String",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 76,
+  "title": "Minimum Window Substring",
+  "difficulty": "HARD",
+  "patterns": [
+   "Sliding Window",
+   "Hash Map"
+  ],
+  "topics": [
+   "String",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 239,
+  "title": "Sliding Window Maximum",
+  "difficulty": "HARD",
+  "patterns": [
+   "Monotonic Queue",
+   "Sliding Window"
+  ],
+  "topics": [
+   "Array",
+   "Queue",
+   "Heap"
+  ]
+ },
+ {
+  "number": 20,
+  "title": "Valid Parentheses",
+  "difficulty": "EASY",
+  "patterns": [
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "String",
+   "Stack"
+  ]
+ },
+ {
+  "number": 155,
+  "title": "Min Stack",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "Stack"
+  ]
+ },
+ {
+  "number": 150,
+  "title": "Evaluate Reverse Polish Notation",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "Array",
+   "Stack",
+   "Math"
+  ]
+ },
+ {
+  "number": 22,
+  "title": "Generate Parentheses",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "String",
+   "Recursion",
+   "DP"
+  ]
+ },
+ {
+  "number": 739,
+  "title": "Daily Temperatures",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "Array",
+   "Stack"
+  ]
+ },
+ {
+  "number": 853,
+  "title": "Car Fleet",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "Array",
+   "Stack",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 84,
+  "title": "Largest Rectangle in Histogram",
+  "difficulty": "HARD",
+  "patterns": [
+   "Monotonic Stack"
+  ],
+  "topics": [
+   "Array",
+   "Stack"
+  ]
+ },
+ {
+  "number": 704,
+  "title": "Binary Search",
+  "difficulty": "EASY",
+  "patterns": [
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 74,
+  "title": "Search a 2D Matrix",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Binary Search"
+  ],
+  "topics": [
+   "Array",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 875,
+  "title": "Koko Eating Bananas",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 153,
+  "title": "Find Minimum in Rotated Sorted Array",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 33,
+  "title": "Search in Rotated Sorted Array",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 981,
+  "title": "Time Based Key-Value Store",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Binary Search",
+   "Hash Map"
+  ],
+  "topics": [
+   "Hash Table",
+   "String"
+  ]
+ },
+ {
+  "number": 4,
+  "title": "Median of Two Sorted Arrays",
+  "difficulty": "HARD",
+  "patterns": [
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 206,
+  "title": "Reverse Linked List",
+  "difficulty": "EASY",
+  "patterns": [
+   "In-place Linked List Reversal"
+  ],
+  "topics": [
+   "Linked List",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 21,
+  "title": "Merge Two Sorted Lists",
+  "difficulty": "EASY",
+  "patterns": [
+   "Two Pointer"
+  ],
+  "topics": [
+   "Linked List",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 143,
+  "title": "Reorder List",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Fast/Slow Pointers",
+   "In-place Linked List Reversal"
+  ],
+  "topics": [
+   "Linked List"
+  ]
+ },
+ {
+  "number": 19,
+  "title": "Remove Nth Node From End of List",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Two Pointer"
+  ],
+  "topics": [
+   "Linked List"
+  ]
+ },
+ {
+  "number": 138,
+  "title": "Copy List with Random Pointer",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Linked List",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 2,
+  "title": "Add Two Numbers",
+  "difficulty": "MEDIUM",
+  "patterns": [],
+  "topics": [
+   "Linked List",
+   "Math"
+  ]
+ },
+ {
+  "number": 141,
+  "title": "Linked List Cycle",
+  "difficulty": "EASY",
+  "patterns": [
+   "Fast/Slow Pointers"
+  ],
+  "topics": [
+   "Linked List",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 142,
+  "title": "Linked List Cycle II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Fast/Slow Pointers"
+  ],
+  "topics": [
+   "Linked List"
+  ]
+ },
+ {
+  "number": 876,
+  "title": "Middle of the Linked List",
+  "difficulty": "EASY",
+  "patterns": [
+   "Fast/Slow Pointers"
+  ],
+  "topics": [
+   "Linked List"
+  ]
+ },
+ {
+  "number": 234,
+  "title": "Palindrome Linked List",
+  "difficulty": "EASY",
+  "patterns": [
+   "Fast/Slow Pointers",
+   "In-place Linked List Reversal"
+  ],
+  "topics": [
+   "Linked List",
+   "Stack"
+  ]
+ },
+ {
+  "number": 92,
+  "title": "Reverse Linked List II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "In-place Linked List Reversal"
+  ],
+  "topics": [
+   "Linked List"
+  ]
+ },
+ {
+  "number": 287,
+  "title": "Find the Duplicate Number",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Fast/Slow Pointers",
+   "Binary Search"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 146,
+  "title": "LRU Cache",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Linked List",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 23,
+  "title": "Merge k Sorted Lists",
+  "difficulty": "HARD",
+  "patterns": [
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Linked List",
+   "Heap"
+  ]
+ },
+ {
+  "number": 25,
+  "title": "Reverse Nodes in k-Group",
+  "difficulty": "HARD",
+  "patterns": [
+   "In-place Linked List Reversal"
+  ],
+  "topics": [
+   "Linked List",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 226,
+  "title": "Invert Binary Tree",
+  "difficulty": "EASY",
+  "patterns": [
+   "DFS",
+   "BFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 104,
+  "title": "Maximum Depth of Binary Tree",
+  "difficulty": "EASY",
+  "patterns": [
+   "DFS",
+   "BFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 543,
+  "title": "Diameter of Binary Tree",
+  "difficulty": "EASY",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 110,
+  "title": "Balanced Binary Tree",
+  "difficulty": "EASY",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 100,
+  "title": "Same Tree",
+  "difficulty": "EASY",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 572,
+  "title": "Subtree of Another Tree",
+  "difficulty": "EASY",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 235,
+  "title": "Lowest Common Ancestor of a Binary Search Tree",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees",
+   "Binary Search Tree"
+  ]
+ },
+ {
+  "number": 102,
+  "title": "Binary Tree Level Order Traversal",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "BFS"
+  ],
+  "topics": [
+   "Trees",
+   "Queue"
+  ]
+ },
+ {
+  "number": 199,
+  "title": "Binary Tree Right Side View",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "BFS",
+   "DFS"
+  ],
+  "topics": [
+   "Trees",
+   "Queue"
+  ]
+ },
+ {
+  "number": 1448,
+  "title": "Count Good Nodes in Binary Tree",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees"
+  ]
+ },
+ {
+  "number": 98,
+  "title": "Validate Binary Search Tree",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees",
+   "Binary Search Tree"
+  ]
+ },
+ {
+  "number": 230,
+  "title": "Kth Smallest Element in a BST",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees",
+   "Binary Search Tree"
+  ]
+ },
+ {
+  "number": 105,
+  "title": "Construct Binary Tree from Preorder and Inorder Traversal",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS",
+   "Hash Map"
+  ],
+  "topics": [
+   "Trees",
+   "Array",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 124,
+  "title": "Binary Tree Maximum Path Sum",
+  "difficulty": "HARD",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Trees",
+   "DP"
+  ]
+ },
+ {
+  "number": 297,
+  "title": "Serialize and Deserialize Binary Tree",
+  "difficulty": "HARD",
+  "patterns": [
+   "DFS",
+   "BFS"
+  ],
+  "topics": [
+   "Trees",
+   "String"
+  ]
+ },
+ {
+  "number": 208,
+  "title": "Implement Trie (Prefix Tree)",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Trie"
+  ],
+  "topics": [
+   "Trie",
+   "String",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 211,
+  "title": "Design Add and Search Words Data Structure",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Trie",
+   "DFS"
+  ],
+  "topics": [
+   "Trie",
+   "String"
+  ]
+ },
+ {
+  "number": 212,
+  "title": "Word Search II",
+  "difficulty": "HARD",
+  "patterns": [
+   "Trie",
+   "Backtracking"
+  ],
+  "topics": [
+   "Trie",
+   "String",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 703,
+  "title": "Kth Largest Element in a Stream",
+  "difficulty": "EASY",
+  "patterns": [
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Heap",
+   "Trees"
+  ]
+ },
+ {
+  "number": 1046,
+  "title": "Last Stone Weight",
+  "difficulty": "EASY",
+  "patterns": [
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Heap",
+   "Array"
+  ]
+ },
+ {
+  "number": 973,
+  "title": "K Closest Points to Origin",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Heap",
+   "Array",
+   "Math",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 215,
+  "title": "Kth Largest Element in an Array",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Heap",
+   "Array",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 621,
+  "title": "Task Scheduler",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Top-K/Heap",
+   "Greedy"
+  ],
+  "topics": [
+   "Heap",
+   "Greedy",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 355,
+  "title": "Design Twitter",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Top-K/Heap",
+   "Hash Map"
+  ],
+  "topics": [
+   "Heap",
+   "Hash Table",
+   "Linked List"
+  ]
+ },
+ {
+  "number": 295,
+  "title": "Find Median from Data Stream",
+  "difficulty": "HARD",
+  "patterns": [
+   "Two Heaps"
+  ],
+  "topics": [
+   "Heap",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 480,
+  "title": "Sliding Window Median",
+  "difficulty": "HARD",
+  "patterns": [
+   "Two Heaps",
+   "Sliding Window"
+  ],
+  "topics": [
+   "Heap",
+   "Array"
+  ]
+ },
+ {
+  "number": 502,
+  "title": "IPO",
+  "difficulty": "HARD",
+  "patterns": [
+   "Two Heaps",
+   "Greedy"
+  ],
+  "topics": [
+   "Heap",
+   "Greedy",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 78,
+  "title": "Subsets",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking",
+   "Bitmask"
+  ],
+  "topics": [
+   "Array",
+   "Recursion",
+   "Bit Manipulation"
+  ]
+ },
+ {
+  "number": 39,
+  "title": "Combination Sum",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "Array",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 46,
+  "title": "Permutations",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "Array",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 90,
+  "title": "Subsets II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "Array",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 40,
+  "title": "Combination Sum II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "Array",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 79,
+  "title": "Word Search",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking",
+   "DFS"
+  ],
+  "topics": [
+   "Matrix",
+   "String",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 131,
+  "title": "Palindrome Partitioning",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "String",
+   "Recursion",
+   "DP"
+  ]
+ },
+ {
+  "number": 17,
+  "title": "Letter Combinations of a Phone Number",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "String",
+   "Hash Table",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 51,
+  "title": "N-Queens",
+  "difficulty": "HARD",
+  "patterns": [
+   "Backtracking"
+  ],
+  "topics": [
+   "Array",
+   "Recursion",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 200,
+  "title": "Number of Islands",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS",
+   "BFS",
+   "Union Find"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 695,
+  "title": "Max Area of Island",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS",
+   "BFS"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 133,
+  "title": "Clone Graph",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS",
+   "BFS",
+   "Hash Map"
+  ],
+  "topics": [
+   "Graphs",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 994,
+  "title": "Rotting Oranges",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "BFS"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix",
+   "Queue"
+  ]
+ },
+ {
+  "number": 417,
+  "title": "Pacific Atlantic Water Flow",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS",
+   "BFS"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 130,
+  "title": "Surrounded Regions",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "DFS",
+   "BFS",
+   "Union Find"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix"
+  ]
+ },
+ {
+  "number": 207,
+  "title": "Course Schedule",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Topological Sort",
+   "DFS"
+  ],
+  "topics": [
+   "Graphs"
+  ]
+ },
+ {
+  "number": 210,
+  "title": "Course Schedule II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Topological Sort",
+   "BFS"
+  ],
+  "topics": [
+   "Graphs"
+  ]
+ },
+ {
+  "number": 802,
+  "title": "Find Eventual Safe States",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Topological Sort",
+   "DFS"
+  ],
+  "topics": [
+   "Graphs"
+  ]
+ },
+ {
+  "number": 684,
+  "title": "Redundant Connection",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Union Find"
+  ],
+  "topics": [
+   "Graphs"
+  ]
+ },
+ {
+  "number": 547,
+  "title": "Number of Provinces",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Union Find",
+   "DFS"
+  ],
+  "topics": [
+   "Graphs"
+  ]
+ },
+ {
+  "number": 721,
+  "title": "Accounts Merge",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Union Find",
+   "DFS"
+  ],
+  "topics": [
+   "Graphs",
+   "Hash Table",
+   "String"
+  ]
+ },
+ {
+  "number": 127,
+  "title": "Word Ladder",
+  "difficulty": "HARD",
+  "patterns": [
+   "BFS"
+  ],
+  "topics": [
+   "Graphs",
+   "String",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 332,
+  "title": "Reconstruct Itinerary",
+  "difficulty": "HARD",
+  "patterns": [
+   "DFS"
+  ],
+  "topics": [
+   "Graphs"
+  ]
+ },
+ {
+  "number": 1584,
+  "title": "Min Cost to Connect All Points",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Union Find",
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Graphs",
+   "Heap"
+  ]
+ },
+ {
+  "number": 743,
+  "title": "Network Delay Time",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Dijkstra"
+  ],
+  "topics": [
+   "Graphs",
+   "Heap"
+  ]
+ },
+ {
+  "number": 1631,
+  "title": "Path With Minimum Effort",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Dijkstra",
+   "Binary Search"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix",
+   "Heap"
+  ]
+ },
+ {
+  "number": 1514,
+  "title": "Path with Maximum Probability",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Dijkstra"
+  ],
+  "topics": [
+   "Graphs",
+   "Heap"
+  ]
+ },
+ {
+  "number": 778,
+  "title": "Swim in Rising Water",
+  "difficulty": "HARD",
+  "patterns": [
+   "Dijkstra",
+   "Binary Search"
+  ],
+  "topics": [
+   "Graphs",
+   "Matrix",
+   "Heap"
+  ]
+ },
+ {
+  "number": 787,
+  "title": "Cheapest Flights Within K Stops",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Dijkstra",
+   "BFS"
+  ],
+  "topics": [
+   "Graphs",
+   "DP",
+   "Heap"
+  ]
+ },
+ {
+  "number": 847,
+  "title": "Shortest Path Visiting All Nodes",
+  "difficulty": "HARD",
+  "patterns": [
+   "Bitmask",
+   "BFS"
+  ],
+  "topics": [
+   "Graphs",
+   "Bit Manipulation"
+  ]
+ },
+ {
+  "number": 70,
+  "title": "Climbing Stairs",
+  "difficulty": "EASY",
+  "patterns": [
+   "1D DP"
+  ],
+  "topics": [
+   "DP",
+   "Math"
+  ]
+ },
+ {
+  "number": 746,
+  "title": "Min Cost Climbing Stairs",
+  "difficulty": "EASY",
+  "patterns": [
+   "1D DP"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 198,
+  "title": "House Robber",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 213,
+  "title": "House Robber II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 5,
+  "title": "Longest Palindromic Substring",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP",
+   "Two Pointer"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 647,
+  "title": "Palindromic Substrings",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP",
+   "Two Pointer"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 91,
+  "title": "Decode Ways",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 322,
+  "title": "Coin Change",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Knapsack",
+   "1D DP"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 152,
+  "title": "Maximum Product Subarray",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Kadane's Algorithm",
+   "1D DP"
+  ],
+  "topics": [
+   "Array",
+   "DP"
+  ]
+ },
+ {
+  "number": 139,
+  "title": "Word Break",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP",
+   "Trie"
+  ],
+  "topics": [
+   "String",
+   "DP",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 300,
+  "title": "Longest Increasing Subsequence",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "1D DP",
+   "Binary Search"
+  ],
+  "topics": [
+   "Array",
+   "DP"
+  ]
+ },
+ {
+  "number": 416,
+  "title": "Partition Equal Subset Sum",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Knapsack"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 53,
+  "title": "Maximum Subarray",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Kadane's Algorithm"
+  ],
+  "topics": [
+   "Array",
+   "DP"
+  ]
+ },
+ {
+  "number": 918,
+  "title": "Maximum Sum Circular Subarray",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Kadane's Algorithm",
+   "Monotonic Queue"
+  ],
+  "topics": [
+   "Array",
+   "DP",
+   "Queue"
+  ]
+ },
+ {
+  "number": 62,
+  "title": "Unique Paths",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "DP",
+   "Math"
+  ]
+ },
+ {
+  "number": 1143,
+  "title": "Longest Common Subsequence",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 309,
+  "title": "Best Time to Buy and Sell Stock with Cooldown",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "Array",
+   "DP"
+  ]
+ },
+ {
+  "number": 518,
+  "title": "Coin Change II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Knapsack",
+   "2D DP"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 494,
+  "title": "Target Sum",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Knapsack",
+   "Backtracking"
+  ],
+  "topics": [
+   "DP",
+   "Array"
+  ]
+ },
+ {
+  "number": 474,
+  "title": "Ones and Zeroes",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Knapsack",
+   "2D DP"
+  ],
+  "topics": [
+   "DP",
+   "String",
+   "Array"
+  ]
+ },
+ {
+  "number": 97,
+  "title": "Interleaving String",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 329,
+  "title": "Longest Increasing Path in a Matrix",
+  "difficulty": "HARD",
+  "patterns": [
+   "DFS",
+   "Topological Sort",
+   "2D DP"
+  ],
+  "topics": [
+   "Matrix",
+   "Graphs",
+   "DP"
+  ]
+ },
+ {
+  "number": 115,
+  "title": "Distinct Subsequences",
+  "difficulty": "HARD",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 72,
+  "title": "Edit Distance",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "String",
+   "DP"
+  ]
+ },
+ {
+  "number": 312,
+  "title": "Burst Balloons",
+  "difficulty": "HARD",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "Array",
+   "DP"
+  ]
+ },
+ {
+  "number": 10,
+  "title": "Regular Expression Matching",
+  "difficulty": "HARD",
+  "patterns": [
+   "2D DP"
+  ],
+  "topics": [
+   "String",
+   "DP",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 55,
+  "title": "Jump Game",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy"
+  ],
+  "topics": [
+   "Array",
+   "Greedy",
+   "DP"
+  ]
+ },
+ {
+  "number": 45,
+  "title": "Jump Game II",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy"
+  ],
+  "topics": [
+   "Array",
+   "Greedy",
+   "DP"
+  ]
+ },
+ {
+  "number": 134,
+  "title": "Gas Station",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy"
+  ],
+  "topics": [
+   "Array",
+   "Greedy"
+  ]
+ },
+ {
+  "number": 846,
+  "title": "Hand of Straights",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy",
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Greedy",
+   "Hash Table",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 1899,
+  "title": "Merge Triplets to Form Target Triplet",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy"
+  ],
+  "topics": [
+   "Array",
+   "Greedy"
+  ]
+ },
+ {
+  "number": 763,
+  "title": "Partition Labels",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy",
+   "Two Pointer"
+  ],
+  "topics": [
+   "String",
+   "Greedy",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 678,
+  "title": "Valid Parenthesis String",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Greedy"
+  ],
+  "topics": [
+   "String",
+   "Greedy",
+   "Stack",
+   "DP"
+  ]
+ },
+ {
+  "number": 57,
+  "title": "Insert Interval",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Merge Intervals"
+  ],
+  "topics": [
+   "Intervals",
+   "Array"
+  ]
+ },
+ {
+  "number": 56,
+  "title": "Merge Intervals",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Merge Intervals"
+  ],
+  "topics": [
+   "Intervals",
+   "Array",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 435,
+  "title": "Non-overlapping Intervals",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Merge Intervals",
+   "Greedy"
+  ],
+  "topics": [
+   "Intervals",
+   "Greedy",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 986,
+  "title": "Interval List Intersections",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Merge Intervals",
+   "Two Pointer"
+  ],
+  "topics": [
+   "Intervals",
+   "Array"
+  ]
+ },
+ {
+  "number": 1851,
+  "title": "Minimum Interval to Include Each Query",
+  "difficulty": "HARD",
+  "patterns": [
+   "Merge Intervals",
+   "Top-K/Heap"
+  ],
+  "topics": [
+   "Intervals",
+   "Heap",
+   "Sorting"
+  ]
+ },
+ {
+  "number": 303,
+  "title": "Range Sum Query - Immutable",
+  "difficulty": "EASY",
+  "patterns": [
+   "Prefix Sum"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 560,
+  "title": "Subarray Sum Equals K",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Prefix Sum",
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 304,
+  "title": "Range Sum Query 2D - Immutable",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Prefix Sum"
+  ],
+  "topics": [
+   "Matrix",
+   "Array"
+  ]
+ },
+ {
+  "number": 525,
+  "title": "Contiguous Array",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Prefix Sum",
+   "Hash Map"
+  ],
+  "topics": [
+   "Array",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 1438,
+  "title": "Longest Continuous Subarray With Absolute Diff Less Than or Equal to Limit",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Monotonic Queue",
+   "Sliding Window"
+  ],
+  "topics": [
+   "Array",
+   "Queue"
+  ]
+ },
+ {
+  "number": 862,
+  "title": "Shortest Subarray with Sum at Least K",
+  "difficulty": "HARD",
+  "patterns": [
+   "Monotonic Queue",
+   "Prefix Sum"
+  ],
+  "topics": [
+   "Array",
+   "Queue"
+  ]
+ },
+ {
+  "number": 268,
+  "title": "Missing Number",
+  "difficulty": "EASY",
+  "patterns": [
+   "Cyclic Sort",
+   "Bitmask"
+  ],
+  "topics": [
+   "Array",
+   "Math",
+   "Bit Manipulation"
+  ]
+ },
+ {
+  "number": 448,
+  "title": "Find All Numbers Disappeared in an Array",
+  "difficulty": "EASY",
+  "patterns": [
+   "Cyclic Sort"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 442,
+  "title": "Find All Duplicates in an Array",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Cyclic Sort"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 41,
+  "title": "First Missing Positive",
+  "difficulty": "HARD",
+  "patterns": [
+   "Cyclic Sort"
+  ],
+  "topics": [
+   "Array"
+  ]
+ },
+ {
+  "number": 48,
+  "title": "Rotate Image",
+  "difficulty": "MEDIUM",
+  "patterns": [],
+  "topics": [
+   "Matrix",
+   "Math"
+  ]
+ },
+ {
+  "number": 54,
+  "title": "Spiral Matrix",
+  "difficulty": "MEDIUM",
+  "patterns": [],
+  "topics": [
+   "Matrix",
+   "Array"
+  ]
+ },
+ {
+  "number": 73,
+  "title": "Set Matrix Zeroes",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Matrix",
+   "Array"
+  ]
+ },
+ {
+  "number": 202,
+  "title": "Happy Number",
+  "difficulty": "EASY",
+  "patterns": [
+   "Fast/Slow Pointers"
+  ],
+  "topics": [
+   "Math",
+   "Hash Table"
+  ]
+ },
+ {
+  "number": 66,
+  "title": "Plus One",
+  "difficulty": "EASY",
+  "patterns": [],
+  "topics": [
+   "Array",
+   "Math"
+  ]
+ },
+ {
+  "number": 50,
+  "title": "Pow(x, n)",
+  "difficulty": "MEDIUM",
+  "patterns": [],
+  "topics": [
+   "Math",
+   "Recursion"
+  ]
+ },
+ {
+  "number": 43,
+  "title": "Multiply Strings",
+  "difficulty": "MEDIUM",
+  "patterns": [],
+  "topics": [
+   "String",
+   "Math"
+  ]
+ },
+ {
+  "number": 2013,
+  "title": "Detect Squares",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Hash Map"
+  ],
+  "topics": [
+   "Hash Table",
+   "Math"
+  ]
+ },
+ {
+  "number": 136,
+  "title": "Single Number",
+  "difficulty": "EASY",
+  "patterns": [
+   "Bitmask"
+  ],
+  "topics": [
+   "Bit Manipulation",
+   "Array"
+  ]
+ },
+ {
+  "number": 191,
+  "title": "Number of 1 Bits",
+  "difficulty": "EASY",
+  "patterns": [
+   "Bitmask"
+  ],
+  "topics": [
+   "Bit Manipulation"
+  ]
+ },
+ {
+  "number": 338,
+  "title": "Counting Bits",
+  "difficulty": "EASY",
+  "patterns": [
+   "Bitmask",
+   "1D DP"
+  ],
+  "topics": [
+   "Bit Manipulation",
+   "DP"
+  ]
+ },
+ {
+  "number": 190,
+  "title": "Reverse Bits",
+  "difficulty": "EASY",
+  "patterns": [
+   "Bitmask"
+  ],
+  "topics": [
+   "Bit Manipulation"
+  ]
+ },
+ {
+  "number": 371,
+  "title": "Sum of Two Integers",
+  "difficulty": "MEDIUM",
+  "patterns": [
+   "Bitmask"
+  ],
+  "topics": [
+   "Bit Manipulation",
+   "Math"
+  ]
+ },
+ {
+  "number": 7,
+  "title": "Reverse Integer",
+  "difficulty": "MEDIUM",
+  "patterns": [],
+  "topics": [
+   "Math"
+  ]
+ }
+]

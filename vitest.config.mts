@@ -22,7 +22,8 @@ export default defineConfig({
       JWT_SECRET: 'test-secret-do-not-use-in-production',
       JWT_EXPIRES_IN: '1h',
       BCRYPT_ROUNDS: '4',
-      // Empty key => AI mock mode.
+      // Deterministic AI by default; provider tests build their own services.
+      AI_PROVIDER: 'rules',
       ANTHROPIC_API_KEY: '',
     },
   },

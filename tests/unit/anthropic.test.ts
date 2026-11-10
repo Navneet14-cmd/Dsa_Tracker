@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { outputFormat, parseFinalJson } from '../../src/services/ai/claude';
+import { outputFormat, parseFinalJson } from '../../src/services/ai/providers/anthropic';
 import { HttpError } from '../../src/lib/errors';
 
 const Schema = z.object({ items: z.array(z.object({ number: z.number().int(), kind: z.enum(['A', 'B']) })) });

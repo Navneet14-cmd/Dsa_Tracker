@@ -13,11 +13,14 @@ import problemRoutes from './routes/problemRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import goalRoutes from './routes/goalRoutes';
 import revisionRoutes from './routes/revisionRoutes';
-import aiRoutes from './routes/aiRoutes';
+import { createAiRouter } from './routes/aiRoutes';
+import { createAiService, providerFromConfig, type AiService } from './services/ai';
 
 export interface AppOptions {
   authRateLimitMax?: number;
   aiRateLimitMax?: number;
+  /** Inject an AI service (tests). Defaults to the provider chosen by AI_PROVIDER. */
+  ai?: AiService;
 }
 
 function corsOptions(): CorsOptions {
@@ -62,7 +65,8 @@ export function createApp(options: AppOptions = {}): Express {
   app.use('/dashboard', requireAuth, dashboardRoutes);
   app.use('/goals', requireAuth, goalRoutes);
   app.use('/revisions', requireAuth, revisionRoutes);
-  app.use('/ai', requireAuth, aiLimiter, aiRoutes);
+  const ai = options.ai ?? createAiService(providerFromConfig(config));
+  app.use('/ai', requireAuth, createAiRouter(ai, aiLimiter));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
