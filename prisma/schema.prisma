@@ -91,6 +91,8 @@ model Problem {
 
   @@index([userId])
   @@index([leetcodeNumber])
+  @@index([userId, leetcodeNumber])
+  @@index([userId, dateSolved])
 }
 
 model ProblemTopic {
@@ -134,16 +136,29 @@ model Goal {
 // REVISION SYSTEM — spaced repetition schedule generated on log/flag
 // ---------------------------------------------------------------------------
 
+// Self-assessment recorded when a revision is completed. Drives the next
+// interval: AGAIN resets the ladder, HARD repeats the current step, GOOD
+// advances one step (the default 1 -> 3 -> 7 -> 14 -> 30 path), EASY skips one.
+enum RevisionRating {
+  AGAIN
+  HARD
+  GOOD
+  EASY
+}
+
 model Revision {
-  id            String    @id @default(cuid())
+  id            String          @id @default(cuid())
   problemId     String
   scheduledFor  DateTime
-  intervalDays  Int               // 1, 3, 7, 14, 30...
-  completed     Boolean   @default(false)
+  intervalDays  Int                       // 1, 3, 7, 14, 30...
+  completed     Boolean         @default(false)
   completedAt   DateTime?
+  rating        RevisionRating?           // set on completion
+  createdAt     DateTime        @default(now())
 
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
   @@index([problemId])
   @@index([scheduledFor])
+  @@index([problemId, completed])
 }
