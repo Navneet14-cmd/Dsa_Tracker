@@ -1,15 +1,14 @@
 import { Router } from 'express';
-import { recommend, analyzeWeakness, generateStudyPlan } from '../controllers/aiController';
+import { analyzeWeakness, generateStudyPlan, recommend } from '../controllers/aiController';
+import { validate } from '../middleware/validate';
+import { asyncHandler } from '../lib/errors';
+import { RecommendSchema, StudyPlanSchema, WeaknessAnalysisSchema } from '../schemas';
 
+// Mounted at /ai (behind requireAuth and the per-user AI rate limiter)
 const router = Router();
 
-// POST /ai/recommend
-router.post('/recommend', recommend);
-
-// POST /ai/weakness-analysis
-router.post('/weakness-analysis', analyzeWeakness);
-
-// POST /ai/study-plan
-router.post('/study-plan', generateStudyPlan);
+router.post('/recommend', validate({ body: RecommendSchema }), asyncHandler(recommend));
+router.post('/weakness-analysis', validate({ body: WeaknessAnalysisSchema }), asyncHandler(analyzeWeakness));
+router.post('/study-plan', validate({ body: StudyPlanSchema }), asyncHandler(generateStudyPlan));
 
 export default router;

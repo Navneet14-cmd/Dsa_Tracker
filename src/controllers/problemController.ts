@@ -1,459 +1,256 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
+import { HttpError, badRequest, notFound, unauthorized } from '../lib/errors';
+import {
+  CreateProblemInput,
+  GetProblemsQuery,
+  IdParams,
+  UpdateProblemInput,
+  AddToRevisionSchema,
+} from '../schemas';
+import { z } from 'zod';
+import {
+  addToRevision,
+  lockOwnedProblem,
+  removeFromRevision,
+  scheduleFirstReview,
+} from '../services/revisionService';
+
+type Tx = Prisma.TransactionClient;
+
+const problemInclude = {
+  topics: { select: { topic: { select: { id: true, name: true } } } },
+  patterns: { select: { pattern: { select: { id: true, name: true } } } },
+  revisions: { orderBy: { scheduledFor: 'asc' } },
+} satisfies Prisma.ProblemInclude;
+
+/** 400 listing any topic/pattern ids that don't exist. */
+async function assertTaxonomyExists(topicIds: string[] = [], patternIds: string[] = []) {
+  const [topics, patterns] = await Promise.all([
+    topicIds.length ? prisma.topic.findMany({ where: { id: { in: topicIds } }, select: { id: true } }) : [],
+    patternIds.length ? prisma.pattern.findMany({ where: { id: { in: patternIds } }, select: { id: true } }) : [],
+  ]);
+  const found = new Set([...topics, ...patterns].map((r) => r.id));
+  const errors = [
+    ...topicIds.filter((id) => !found.has(id)).map((id) => ({ field: 'topicIds', message: `Unknown topicId: ${id}` })),
+    ...patternIds.filter((id) => !found.has(id)).map((id) => ({ field: 'patternIds', message: `Unknown patternId: ${id}` })),
+  ];
+  if (errors.length) throw badRequest(errors[0].message, { code: 'INVALID_REFERENCE', errors });
+}
 
 /**
- * Log a new LeetCode problem solved
+ * One entry per LeetCode problem per user. Logging the same number again
+ * returns 409 with the existing entry's id so the client can edit it instead.
+ * The user row lock serializes concurrent logs for the same user.
  */
-export const createProblem = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const {
-      leetcodeNumber,
-      title,
-      difficulty,
-      topicIds,
-      patternIds,
-      timeTakenMins,
-      dateSolved,
-      solvedAlone,
-      notes,
-      needsRevision,
-      confidence,
-    } = req.body;
+async function assertNotDuplicate(tx: Tx, userId: string, leetcodeNumber: number, exceptId?: string) {
+  const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+  if (locked.length === 0) throw unauthorized('User no longer exists');
 
-    const userId = req.userId!;
+  const dup = await tx.problem.findFirst({
+    where: { userId, leetcodeNumber, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { id: true, title: true },
+  });
+  if (dup) {
+    throw new HttpError(
+      409,
+      `You've already logged LeetCode #${leetcodeNumber} ("${dup.title}"). Edit the existing entry instead.`,
+      'DUPLICATE_PROBLEM',
+      { existingProblemId: dup.id },
+    );
+  }
+}
 
-    const problem = await prisma.$transaction(async (tx) => {
-      // 1. Create the main problem record
-      const newProblem = await tx.problem.create({
-        data: {
-          userId,
-          leetcodeNumber,
-          title,
-          difficulty,
-          timeTakenMins,
-          dateSolved,
-          solvedAlone,
-          notes: notes || null,
-          needsRevision,
-          confidence,
-        },
-      });
+/** POST /problems */
+export const createProblem = async (req: Request, res: Response) => {
+  const input = req.body as CreateProblemInput;
+  const userId = req.userId!;
 
-      // 2. Associate with Topics
-      if (topicIds && topicIds.length > 0) {
-        await tx.problemTopic.createMany({
-          data: topicIds.map((topicId: string) => ({
-            problemId: newProblem.id,
-            topicId,
-          })),
-        });
-      }
+  await assertTaxonomyExists(input.topicIds, input.patternIds);
 
-      // 3. Associate with Patterns
-      if (patternIds && patternIds.length > 0) {
-        await tx.problemPattern.createMany({
-          data: patternIds.map((patternId: string) => ({
-            problemId: newProblem.id,
-            patternId,
-          })),
-        });
-      }
+  const problem = await prisma.$transaction(async (tx) => {
+    await assertNotDuplicate(tx, userId, input.leetcodeNumber);
 
-      // 4. Create first revision if flagged needsRevision
-      if (needsRevision) {
-        const scheduledFor = new Date(dateSolved);
-        scheduledFor.setDate(scheduledFor.getDate() + 1); // Date solved + 1 day
-
-        await tx.revision.create({
-          data: {
-            problemId: newProblem.id,
-            scheduledFor,
-            intervalDays: 1,
-          },
-        });
-      }
-
-      return newProblem;
-    });
-
-    // Fetch the complete problem with relations to return
-    const fullProblem = await prisma.problem.findUnique({
-      where: { id: problem.id },
-      include: {
-        topics: {
-          select: {
-            topic: {
-              select: { id: true, name: true }
-            }
-          }
-        },
-        patterns: {
-          select: {
-            pattern: {
-              select: { id: true, name: true }
-            }
-          }
-        },
-        revisions: true,
+    const created = await tx.problem.create({
+      data: {
+        userId,
+        leetcodeNumber: input.leetcodeNumber,
+        title: input.title,
+        difficulty: input.difficulty,
+        timeTakenMins: input.timeTakenMins,
+        dateSolved: input.dateSolved,
+        solvedAlone: input.solvedAlone,
+        notes: input.notes || null,
+        needsRevision: input.needsRevision,
+        confidence: input.confidence,
+        topics: { create: input.topicIds.map((topicId) => ({ topicId })) },
+        patterns: { create: input.patternIds.map((patternId) => ({ patternId })) },
       },
     });
 
-    return res.status(201).json({
-      status: 'success',
-      problem: fullProblem,
-    });
-  } catch (error) {
-    next(error);
-  }
+    if (input.needsRevision) await scheduleFirstReview(tx, created.id, input.dateSolved);
+
+    return tx.problem.findUniqueOrThrow({ where: { id: created.id }, include: problemInclude });
+  });
+
+  res.status(201).json({ status: 'success', problem });
 };
 
-/**
- * List paginated and filterable problems for current user
- */
-export const getProblems = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { page, limit, topicId, patternId, difficulty, startDate, endDate, search } = req.query as any;
+/** GET /problems */
+export const getProblems = async (req: Request, res: Response) => {
+  const { page, limit, topicId, patternId, difficulty, startDate, endDate, search } =
+    req.query as unknown as GetProblemsQuery;
 
-    const skip = (page - 1) * limit;
-    const take = limit;
-
-    const where: any = {
-      userId: req.userId!,
-    };
-
-    if (difficulty) {
-      where.difficulty = difficulty;
-    }
-
-    if (topicId) {
-      where.topics = {
-        some: {
-          topicId,
-        },
-      };
-    }
-
-    if (patternId) {
-      where.patterns = {
-        some: {
-          patternId,
-        },
-      };
-    }
-
-    if (startDate || endDate) {
-      where.dateSolved = {};
-      if (startDate) {
-        where.dateSolved.gte = new Date(startDate);
-      }
-      if (endDate) {
-        where.dateSolved.lte = new Date(endDate);
-      }
-    }
-
-    if (search) {
-      const parsedNum = parseInt(search, 10);
-      if (!isNaN(parsedNum)) {
-        where.OR = [
-          { leetcodeNumber: parsedNum },
-          { title: { contains: search, mode: 'insensitive' } },
-        ];
-      } else {
-        where.title = { contains: search, mode: 'insensitive' };
-      }
-    }
-
-    const [problems, total] = await Promise.all([
-      prisma.problem.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { dateSolved: 'desc' },
-        include: {
-          topics: {
-            select: {
-              topic: {
-                select: { id: true, name: true }
-              }
-            }
-          },
-          patterns: {
-            select: {
-              pattern: {
-                select: { id: true, name: true }
-              }
-            }
-          },
-        },
-      }),
-      prisma.problem.count({ where }),
-    ]);
-
-    return res.status(200).json({
-      status: 'success',
-      problems,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    next(error);
+  const where: Prisma.ProblemWhereInput = { userId: req.userId! };
+  if (difficulty) where.difficulty = difficulty;
+  if (topicId) where.topics = { some: { topicId } };
+  if (patternId) where.patterns = { some: { patternId } };
+  if (startDate || endDate) where.dateSolved = { gte: startDate, lte: endDate };
+  if (search) {
+    where.OR = /^\d+$/.test(search)
+      ? [{ leetcodeNumber: Number(search) }, { title: { contains: search, mode: 'insensitive' } }]
+      : [{ title: { contains: search, mode: 'insensitive' } }];
   }
+
+  const [problems, total] = await Promise.all([
+    prisma.problem.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ dateSolved: 'desc' }, { id: 'desc' }],
+      include: { topics: problemInclude.topics, patterns: problemInclude.patterns },
+    }),
+    prisma.problem.count({ where }),
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    problems,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  });
 };
 
-/**
- * Get details of a single logged problem
- */
-export const getProblemById = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
+/** GET /problems/:id */
+export const getProblemById = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const problem = await prisma.problem.findFirst({ where: { id, userId: req.userId }, include: problemInclude });
+  if (!problem) throw notFound('Problem');
+  res.status(200).json({ status: 'success', problem });
+};
 
-    const problem = await prisma.problem.findUnique({
+/** PATCH /problems/:id */
+export const updateProblem = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const input = req.body as UpdateProblemInput;
+  const userId = req.userId!;
+
+  await assertTaxonomyExists(input.topicIds, input.patternIds);
+
+  const problem = await prisma.$transaction(async (tx) => {
+    const existing = await lockOwnedProblem(tx, id, userId);
+    if (input.leetcodeNumber !== undefined) await assertNotDuplicate(tx, userId, input.leetcodeNumber, id);
+
+    const { topicIds, patternIds, needsRevision, ...fields } = input;
+    await tx.problem.update({
       where: { id },
-      include: {
-        topics: {
-          select: {
-            topic: {
-              select: { id: true, name: true }
-            }
-          }
-        },
-        patterns: {
-          select: {
-            pattern: {
-              select: { id: true, name: true }
-            }
-          }
-        },
-        revisions: true,
+      data: {
+        ...fields,
+        ...(needsRevision !== undefined ? { needsRevision } : {}),
+        ...(topicIds ? { topics: { deleteMany: {}, create: topicIds.map((topicId) => ({ topicId })) } } : {}),
+        ...(patternIds ? { patterns: { deleteMany: {}, create: patternIds.map((patternId) => ({ patternId })) } } : {}),
       },
     });
 
-    if (!problem || problem.userId !== req.userId) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Problem not found',
-      });
+    if (needsRevision === true) {
+      // No-op when a review is already pending.
+      await scheduleFirstReview(tx, id, input.dateSolved ?? existing.dateSolved);
+    } else if (needsRevision === false) {
+      await tx.revision.deleteMany({ where: { problemId: id, completed: false } });
     }
 
-    return res.status(200).json({
-      status: 'success',
-      problem,
-    });
-  } catch (error) {
-    next(error);
-  }
+    return tx.problem.findUniqueOrThrow({ where: { id }, include: problemInclude });
+  });
+
+  res.status(200).json({ status: 'success', problem });
 };
 
-/**
- * Update details of a logged problem
- */
-export const updateProblem = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-    const {
-      leetcodeNumber,
-      title,
-      difficulty,
-      topicIds,
-      patternIds,
-      timeTakenMins,
-      dateSolved,
-      solvedAlone,
-      notes,
-      needsRevision,
-      confidence,
-    } = req.body;
+/** DELETE /problems/:id */
+export const deleteProblem = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  // Cascades remove topic/pattern links and revisions.
+  const { count } = await prisma.problem.deleteMany({ where: { id, userId: req.userId } });
+  if (count === 0) throw notFound('Problem');
+  res.status(200).json({ status: 'success', message: 'Problem deleted successfully' });
+};
 
-    const existingProblem = await prisma.problem.findUnique({
-      where: { id },
-    });
+/** POST /problems/:id/revision — put a problem (back) into the review queue. */
+export const addProblemToRevision = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const { dueInDays } = req.body as z.infer<typeof AddToRevisionSchema>;
+  const { revision, created } = await addToRevision(id, req.userId!, dueInDays);
+  res.status(created ? 201 : 200).json({ status: 'success', created, revision });
+};
 
-    if (!existingProblem || existingProblem.userId !== req.userId) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Problem not found',
-      });
-    }
+/** DELETE /problems/:id/revision — take a problem out of the review queue. */
+export const removeProblemFromRevision = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const removed = await removeFromRevision(id, req.userId!);
+  res.status(200).json({ status: 'success', removedPendingRevisions: removed });
+};
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Update basic fields
-      const updatedProblem = await tx.problem.update({
-        where: { id },
-        data: {
-          leetcodeNumber,
-          title,
-          difficulty,
-          timeTakenMins,
-          dateSolved,
-          solvedAlone,
-          notes,
-          needsRevision,
-          confidence,
-        },
-      });
+/** GET /problems/:id/revisions — full review history for one problem. */
+export const getProblemRevisionHistory = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const problem = await prisma.problem.findFirst({
+    where: { id, userId: req.userId },
+    select: {
+      id: true,
+      leetcodeNumber: true,
+      title: true,
+      confidence: true,
+      needsRevision: true,
+      revisions: { orderBy: [{ scheduledFor: 'asc' }, { createdAt: 'asc' }] },
+    },
+  });
+  if (!problem) throw notFound('Problem');
 
-      // 2. Re-associate Topics if topicIds are explicitly passed
-      if (topicIds !== undefined) {
-        await tx.problemTopic.deleteMany({
-          where: { problemId: id },
-        });
-
-        if (topicIds.length > 0) {
-          await tx.problemTopic.createMany({
-            data: topicIds.map((topicId: string) => ({
-              problemId: id,
-              topicId,
-            })),
-          });
-        }
-      }
-
-      // 3. Re-associate Patterns if patternIds are explicitly passed
-      if (patternIds !== undefined) {
-        await tx.problemPattern.deleteMany({
-          where: { problemId: id },
-        });
-
-        if (patternIds.length > 0) {
-          await tx.problemPattern.createMany({
-            data: patternIds.map((patternId: string) => ({
-              problemId: id,
-              patternId,
-            })),
-          });
-        }
-      }
-
-      // 4. Handle revision scheduling triggers
-      if (needsRevision === true) {
-        // Create revision if no active uncompleted revision exists
-        const activeRevision = await tx.revision.findFirst({
-          where: { problemId: id, completed: false },
-        });
-
-        if (!activeRevision) {
-          const targetDate = dateSolved || updatedProblem.dateSolved;
-          const scheduledFor = new Date(targetDate);
-          scheduledFor.setDate(scheduledFor.getDate() + 1); // 1 day interval
-
-          await tx.revision.create({
-            data: {
-              problemId: id,
-              scheduledFor,
-              intervalDays: 1,
-            },
-          });
-        }
-      } else if (needsRevision === false) {
-        // Delete all uncompleted revisions since user marked revision as false
-        await tx.revision.deleteMany({
-          where: {
-            problemId: id,
-            completed: false,
-          },
-        });
-      }
-    });
-
-    // Fetch the updated problem complete with relations
-    const fullProblem = await prisma.problem.findUnique({
-      where: { id },
-      include: {
-        topics: {
-          select: {
-            topic: {
-              select: { id: true, name: true }
-            }
-          }
-        },
-        patterns: {
-          select: {
-            pattern: {
-              select: { id: true, name: true }
-            }
-          }
-        },
-        revisions: true,
+  const { revisions, ...summary } = problem;
+  const completed = revisions.filter((r) => r.completed);
+  res.status(200).json({
+    status: 'success',
+    problem: summary,
+    revisions,
+    stats: {
+      completedCount: completed.length,
+      pending: revisions.find((r) => !r.completed) ?? null,
+      lastCompletedAt: completed.at(-1)?.completedAt ?? null,
+      lastRating: completed.at(-1)?.rating ?? null,
+      ratings: {
+        again: completed.filter((r) => r.rating === 'AGAIN').length,
+        hard: completed.filter((r) => r.rating === 'HARD').length,
+        good: completed.filter((r) => r.rating === 'GOOD').length,
+        easy: completed.filter((r) => r.rating === 'EASY').length,
       },
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      problem: fullProblem,
-    });
-  } catch (error) {
-    next(error);
-  }
+    },
+  });
 };
 
-/**
- * Delete a logged problem
- */
-export const deleteProblem = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-
-    const problem = await prisma.problem.findUnique({
-      where: { id },
-    });
-
-    if (!problem || problem.userId !== req.userId) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Problem not found',
-      });
-    }
-
-    // Delete the problem. Cascade onDelete rule cleans up relations.
-    await prisma.problem.delete({
-      where: { id },
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'Problem deleted successfully',
-    });
-  } catch (error) {
-    next(error);
-  }
+/** GET /topics */
+export const getTopics = async (_req: Request, res: Response) => {
+  const topics = await prisma.topic.findMany({ orderBy: { name: 'asc' } });
+  res.status(200).json({ status: 'success', topics });
 };
 
-/**
- * Fetch seeded topics
- */
-export const getTopics = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const topics = await prisma.topic.findMany({
-      orderBy: { name: 'asc' },
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      topics,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Fetch seeded patterns
- */
-export const getPatterns = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const patterns = await prisma.pattern.findMany({
-      orderBy: { name: 'asc' },
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      patterns,
-    });
-  } catch (error) {
-    next(error);
-  }
+/** GET /patterns */
+export const getPatterns = async (_req: Request, res: Response) => {
+  const patterns = await prisma.pattern.findMany({
+    orderBy: { name: 'asc' },
+    include: { topics: { select: { topicId: true } } },
+  });
+  res.status(200).json({
+    status: 'success',
+    // topicIds is additive; id/name are unchanged.
+    patterns: patterns.map(({ topics, ...p }) => ({ ...p, topicIds: topics.map((t) => t.topicId) })),
+  });
 };

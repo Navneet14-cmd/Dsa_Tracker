@@ -1,15 +1,17 @@
 {
+  // Type-checking config (`npm run typecheck` / `tsc --noEmit`): covers the
+  // server, the seed script and the tests. Builds use tsconfig.build.json.
   "compilerOptions": {
     "target": "ES2022",
     "module": "commonjs",
-    "lib": ["es2022"],
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "lib": ["es2023"],
+    "types": ["node"],
     "strict": true,
+    "noEmit": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "prisma/seed.ts"]
+  "include": ["src/**/*", "prisma/**/*.ts", "tests/**/*", "vitest.config.ts"]
 }

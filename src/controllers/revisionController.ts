@@ -1,183 +1,66 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { dayKey, daysBetween } from '../lib/dates';
+import { CompleteRevisionInput, IdParams, TimeZoneQuery } from '../schemas';
+import { completeRevision as completeRevisionTx } from '../services/revisionService';
 
-/**
- * Get all revisions that are currently due or overdue
- */
-export const getDueRevisions = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.userId!;
+const revisionProblem = {
+  problem: {
+    select: { id: true, leetcodeNumber: true, title: true, difficulty: true, confidence: true },
+  },
+} as const;
 
-    const dueRevisions = await prisma.revision.findMany({
-      where: {
-        completed: false,
-        scheduledFor: {
-          lte: new Date(),
-        },
-        problem: {
-          userId,
-        },
-      },
-      include: {
-        problem: {
-          select: {
-            leetcodeNumber: true,
-            title: true,
-            difficulty: true,
-          },
-        },
-      },
-      orderBy: {
-        scheduledFor: 'asc',
-      },
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      revisions: dueRevisions,
-    });
-  } catch (error) {
-    next(error);
-  }
+/** GET /revisions/due — pending reviews scheduled at or before now. */
+export const getDueRevisions = async (req: Request, res: Response) => {
+  const revisions = await prisma.revision.findMany({
+    where: { completed: false, scheduledFor: { lte: new Date() }, problem: { userId: req.userId } },
+    include: revisionProblem,
+    orderBy: { scheduledFor: 'asc' },
+  });
+  res.status(200).json({ status: 'success', revisions });
 };
 
 /**
- * Mark a revision as completed and schedule the next interval
+ * GET /revisions/upcoming?tz=Area/City
+ * Future reviews bucketed by their real scheduled calendar day in the
+ * caller's time zone: later today, tomorrow, within the next 7 days, later.
  */
-export const completeRevision = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-    const userId = req.userId!;
+export const getUpcomingRevisions = async (req: Request, res: Response) => {
+  const { tz } = req.query as unknown as z.infer<typeof TimeZoneQuery>;
+  const now = new Date();
 
-    // Find revision and verify ownership
-    const revision = await prisma.revision.findUnique({
-      where: { id },
-      include: {
-        problem: {
-          select: {
-            userId: true,
-          },
-        },
-      },
-    });
+  const upcoming = await prisma.revision.findMany({
+    where: { completed: false, scheduledFor: { gt: now }, problem: { userId: req.userId } },
+    include: revisionProblem,
+    orderBy: { scheduledFor: 'asc' },
+  });
 
-    if (!revision || revision.problem.userId !== userId) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Revision not found',
-      });
-    }
-
-    if (revision.completed) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Revision is already completed',
-      });
-    }
-
-    // Determine the next interval days (1 -> 3 -> 7 -> 14 -> 30)
-    const nextIntervalDays = (() => {
-      switch (revision.intervalDays) {
-        case 1: return 3;
-        case 3: return 7;
-        case 7: return 14;
-        case 14: return 30;
-        default: return null; // Ends the repetition cycle
-      }
-    })();
-
-    const updated = await prisma.$transaction(async (tx) => {
-      // 1. Mark current revision completed
-      const completedRevision = await tx.revision.update({
-        where: { id },
-        data: {
-          completed: true,
-          completedAt: new Date(),
-        },
-      });
-
-      // 2. Create the next revision scheduled for now + nextIntervalDays
-      if (nextIntervalDays !== null) {
-        const nextScheduledFor = new Date();
-        nextScheduledFor.setDate(nextScheduledFor.getDate() + nextIntervalDays);
-
-        await tx.revision.create({
-          data: {
-            problemId: revision.problemId,
-            scheduledFor: nextScheduledFor,
-            intervalDays: nextIntervalDays,
-          },
-        });
-      }
-
-      return completedRevision;
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      revision: updated,
-    });
-  } catch (error) {
-    next(error);
+  const today = dayKey(now, tz);
+  const buckets = {
+    today: [] as typeof upcoming,
+    tomorrow: [] as typeof upcoming,
+    thisWeek: [] as typeof upcoming,
+    later: [] as typeof upcoming,
+  };
+  for (const r of upcoming) {
+    const diff = daysBetween(today, dayKey(r.scheduledFor, tz));
+    if (diff <= 0) buckets.today.push(r);
+    else if (diff === 1) buckets.tomorrow.push(r);
+    else if (diff <= 7) buckets.thisWeek.push(r);
+    else buckets.later.push(r);
   }
+
+  res.status(200).json({ status: 'success', timeZone: tz, data: buckets });
 };
 
 /**
- * Get upcoming revisions grouped into Tomorrow, In 3 Days, and In 7 Days
+ * POST /revisions/:id/complete
+ * Optional body: { rating: "again" | "hard" | "good" | "easy" } and/or
+ * { confidence: 1-5 }. With no body the review counts as "good".
  */
-export const getUpcomingRevisions = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.userId!;
-
-    // Retrieve all future uncompleted revisions
-    const upcoming = await prisma.revision.findMany({
-      where: {
-        completed: false,
-        scheduledFor: {
-          gt: new Date(),
-        },
-        problem: {
-          userId,
-        },
-      },
-      include: {
-        problem: {
-          select: {
-            leetcodeNumber: true,
-            title: true,
-            difficulty: true,
-          },
-        },
-      },
-      orderBy: {
-        scheduledFor: 'asc',
-      },
-    });
-
-    // Group directly by the record's intervalDays
-    const tomorrow: typeof upcoming = [];
-    const in3Days: typeof upcoming = [];
-    const in7Days: typeof upcoming = []; // Collapses 7, 14, and 30 day intervals
-
-    upcoming.forEach((r) => {
-      if (r.intervalDays === 1) {
-        tomorrow.push(r);
-      } else if (r.intervalDays === 3) {
-        in3Days.push(r);
-      } else if (r.intervalDays >= 7) {
-        in7Days.push(r);
-      }
-    });
-
-    return res.status(200).json({
-      status: 'success',
-      data: {
-        tomorrow,
-        in3Days,
-        in7Days,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+export const completeRevision = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const result = await completeRevisionTx(id, req.userId!, req.body as CompleteRevisionInput);
+  res.status(200).json({ status: 'success', ...result });
 };

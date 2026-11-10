@@ -1,32 +1,36 @@
 import { Router } from 'express';
 import {
+  addProblemToRevision,
   createProblem,
-  getProblems,
-  getProblemById,
-  updateProblem,
   deleteProblem,
-  getTopics,
-  getPatterns,
+  getProblemById,
+  getProblemRevisionHistory,
+  getProblems,
+  removeProblemFromRevision,
+  updateProblem,
 } from '../controllers/problemController';
+import { validate } from '../middleware/validate';
+import { asyncHandler } from '../lib/errors';
 import {
-  validateBody,
-  validateQuery,
+  AddToRevisionSchema,
   CreateProblemSchema,
-  UpdateProblemSchema,
   GetProblemsQuerySchema,
-} from '../middleware/problemValidation';
+  IdParams,
+  UpdateProblemSchema,
+} from '../schemas';
 
+// Mounted at /problems
 const router = Router();
 
-// Taxonomy Endpoints (For dropdowns)
-router.get('/topics', getTopics);
-router.get('/patterns', getPatterns);
+router.post('/', validate({ body: CreateProblemSchema }), asyncHandler(createProblem));
+router.get('/', validate({ query: GetProblemsQuerySchema }), asyncHandler(getProblems));
+router.get('/:id', validate({ params: IdParams }), asyncHandler(getProblemById));
+router.patch('/:id', validate({ params: IdParams, body: UpdateProblemSchema }), asyncHandler(updateProblem));
+router.delete('/:id', validate({ params: IdParams }), asyncHandler(deleteProblem));
 
-// Problem CRUD Endpoints
-router.post('/problems', validateBody(CreateProblemSchema), createProblem);
-router.get('/problems', validateQuery(GetProblemsQuerySchema), getProblems);
-router.get('/problems/:id', getProblemById);
-router.patch('/problems/:id', validateBody(UpdateProblemSchema), updateProblem);
-router.delete('/problems/:id', deleteProblem);
+// Revision management for a single problem
+router.get('/:id/revisions', validate({ params: IdParams }), asyncHandler(getProblemRevisionHistory));
+router.post('/:id/revision', validate({ params: IdParams, body: AddToRevisionSchema }), asyncHandler(addProblemToRevision));
+router.delete('/:id/revision', validate({ params: IdParams }), asyncHandler(removeProblemFromRevision));
 
 export default router;

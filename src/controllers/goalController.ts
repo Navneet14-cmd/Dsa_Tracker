@@ -1,84 +1,61 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { badRequest, notFound } from '../lib/errors';
+import { IdParams, UpsertGoalSchema } from '../schemas';
 
-/**
- * Create or update a target goal count for a topic
- */
-export const upsertGoal = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { topicId, targetCount } = req.body;
-    const userId = req.userId!;
+const withTopic = { topic: { select: { id: true, name: true } } } as const;
 
-    // Validate that the topic exists first
-    const topic = await prisma.topic.findUnique({
-      where: { id: topicId },
-    });
+/** POST /goals — create or update the target count for a topic. */
+export const upsertGoal = async (req: Request, res: Response) => {
+  const { topicId, targetCount } = req.body as z.infer<typeof UpsertGoalSchema>;
+  const userId = req.userId!;
 
-    if (!topic) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Invalid topicId. Topic does not exist.',
-      });
-    }
+  const topic = await prisma.topic.findUnique({ where: { id: topicId }, select: { id: true } });
+  if (!topic) throw badRequest('Invalid topicId. Topic does not exist.', { code: 'INVALID_REFERENCE' });
 
-    // Upsert the goal
-    const goal = await prisma.goal.upsert({
-      where: {
-        userId_topicId: {
-          userId,
-          topicId,
-        },
-      },
-      update: {
-        targetCount,
-      },
-      create: {
-        userId,
-        topicId,
-        targetCount,
-      },
-      include: {
-        topic: {
-          select: { id: true, name: true },
-        },
-      },
-    });
+  const goal = await prisma.goal.upsert({
+    where: { userId_topicId: { userId, topicId } },
+    update: { targetCount },
+    create: { userId, topicId, targetCount },
+    include: withTopic,
+  });
 
-    return res.status(200).json({
-      status: 'success',
-      goal,
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ status: 'success', goal });
 };
 
-/**
- * Get all goals for the logged-in user
- */
-export const getGoals = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.userId!;
-
-    const goals = await prisma.goal.findMany({
-      where: { userId },
-      include: {
-        topic: {
-          select: { id: true, name: true },
+/** GET /goals — goals with current progress. */
+export const getGoals = async (req: Request, res: Response) => {
+  const userId = req.userId!;
+  const goals = await prisma.goal.findMany({
+    where: { userId },
+    include: {
+      topic: {
+        select: {
+          id: true,
+          name: true,
+          _count: { select: { problems: { where: { problem: { userId } } } } },
         },
       },
-      orderBy: {
-        topic: {
-          name: 'asc',
-        },
-      },
-    });
+    },
+    orderBy: { topic: { name: 'asc' } },
+  });
 
-    return res.status(200).json({
-      status: 'success',
-      goals,
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({
+    status: 'success',
+    goals: goals.map(({ topic: { _count, ...topic }, ...goal }) => ({
+      ...goal,
+      topic,
+      solvedCount: _count.problems,
+      progressPct: Math.min(100, Math.round((_count.problems / goal.targetCount) * 1000) / 10),
+    })),
+  });
+};
+
+/** DELETE /goals/:id */
+export const deleteGoal = async (req: Request, res: Response) => {
+  const { id } = req.params as IdParams;
+  const { count } = await prisma.goal.deleteMany({ where: { id, userId: req.userId } });
+  if (count === 0) throw notFound('Goal');
+  res.status(200).json({ status: 'success', message: 'Goal deleted' });
 };

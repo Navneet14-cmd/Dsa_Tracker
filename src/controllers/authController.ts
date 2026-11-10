@@ -1,137 +1,89 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { config } from '../lib/config';
+import { HttpError, conflict, notFound } from '../lib/errors';
+import { ChangePasswordSchema, LoginSchema, RegisterSchema, UpdateMeSchema } from '../schemas';
 
-/**
- * Register a new user
- */
-export const register = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password, name } = req.body;
+const publicUser = { id: true, email: true, name: true, createdAt: true } as const;
 
-    // Validate inputs
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({
-        status: 'error',
-        message: 'A valid email is required',
-      });
-    }
+const signToken = (userId: string) =>
+  jwt.sign({ userId }, config.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: config.JWT_EXPIRES_IN as SignOptions['expiresIn'],
+  });
 
-    if (!password || typeof password !== 'string') {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Password is required',
-      });
-    }
+// Compared against when the email is unknown so response time doesn't reveal
+// which emails are registered.
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
-    if (password.length < 8) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Password must be at least 8 characters long',
-      });
-    }
+/** POST /auth/register */
+export const register = async (req: Request, res: Response) => {
+  const { email, password, name } = req.body as z.infer<typeof RegisterSchema>;
 
-    const normalizedEmail = email.toLowerCase().trim();
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (existing) throw conflict('Email is already registered');
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+  const passwordHash = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
+  // A concurrent registration can still hit the unique index; the error
+  // handler maps that P2002 to the same 409.
+  const user = await prisma.user.create({
+    data: { email, name: name ?? null, passwordHash },
+    select: publicUser,
+  });
 
-    if (existingUser) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Email is already registered',
-      });
-    }
-
-    // Hash the password
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
-
-    // Create user and explicitly project select fields to exclude passwordHash
-    const user = await prisma.user.create({
-      data: {
-        email: normalizedEmail,
-        name: name ? String(name).trim() : null,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
-
-    // Sign JWT token
-    const token = jwt.sign({ userId: user.id }, config.JWT_SECRET, {
-      expiresIn: '7d',
-    });
-
-    return res.status(201).json({
-      status: 'success',
-      token,
-      user,
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(201).json({ status: 'success', token: signToken(user.id), user });
 };
 
-/**
- * Login user
- */
-export const login = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password } = req.body;
+/** POST /auth/login */
+export const login = async (req: Request, res: Response) => {
+  const { email, password } = req.body as z.infer<typeof LoginSchema>;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Email and password are required',
-      });
-    }
+  const user = await prisma.user.findUnique({ where: { email } });
+  const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !ok) throw new HttpError(401, 'Invalid email or password', 'INVALID_CREDENTIALS');
 
-    const normalizedEmail = email.toLowerCase().trim();
+  const { passwordHash: _omit, ...safeUser } = user;
+  res.status(200).json({ status: 'success', token: signToken(user.id), user: safeUser });
+};
 
-    // Retrieve user including passwordHash for verification
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+/** GET /auth/me */
+export const getMe = async (req: Request, res: Response) => {
+  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: publicUser });
+  if (!user) throw notFound('User');
+  res.status(200).json({ status: 'success', user });
+};
 
-    if (!user) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Invalid email or password',
-      });
-    }
+/** PATCH /auth/me */
+export const updateMe = async (req: Request, res: Response) => {
+  const { name } = req.body as z.infer<typeof UpdateMeSchema>;
+  // P2025 (user deleted) maps to 404 in the error handler.
+  const user = await prisma.user.update({
+    where: { id: req.userId },
+    data: { name: name ?? null },
+    select: publicUser,
+  });
+  res.status(200).json({ status: 'success', user });
+};
 
-    // Verify password match
-    const isPasswordMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordMatch) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Invalid email or password',
-      });
-    }
+/** POST /auth/change-password */
+export const changePassword = async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body as z.infer<typeof ChangePasswordSchema>;
 
-    // Exclude passwordHash from user model response
-    const { passwordHash: _, ...safeUser } = user;
+  const user = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!user) throw notFound('User');
 
-    // Sign JWT token
-    const token = jwt.sign({ userId: user.id }, config.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!ok) throw new HttpError(400, 'Current password is incorrect', 'INVALID_CREDENTIALS');
 
-    return res.status(200).json({
-      status: 'success',
-      token,
-      user: safeUser,
-    });
-  } catch (error) {
-    next(error);
-  }
+  const passwordHash = await bcrypt.hash(newPassword, config.BCRYPT_ROUNDS);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password updated',
+    token: signToken(user.id),
+  });
 };

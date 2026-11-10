@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { getProgressDashboard, getPatternsDashboard } from '../controllers/dashboardController';
+import { getPatternsDashboard, getProgressDashboard } from '../controllers/dashboardController';
+import { validate } from '../middleware/validate';
+import { asyncHandler } from '../lib/errors';
+import { TimeZoneQuery } from '../schemas';
 
+// Mounted at /dashboard
 const router = Router();
 
-// GET /dashboard/progress
-router.get('/progress', getProgressDashboard);
-
-// GET /dashboard/patterns
-router.get('/patterns', getPatternsDashboard);
+router.get('/progress', validate({ query: TimeZoneQuery }), asyncHandler(getProgressDashboard));
+router.get('/patterns', asyncHandler(getPatternsDashboard));
 
 export default router;

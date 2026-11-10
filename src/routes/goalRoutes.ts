@@ -1,14 +1,14 @@
 import { Router } from 'express';
-import { upsertGoal, getGoals } from '../controllers/goalController';
-import { validateBody } from '../middleware/problemValidation';
-import { UpsertGoalSchema } from '../middleware/goalValidation';
+import { deleteGoal, getGoals, upsertGoal } from '../controllers/goalController';
+import { validate } from '../middleware/validate';
+import { asyncHandler } from '../lib/errors';
+import { IdParams, UpsertGoalSchema } from '../schemas';
 
+// Mounted at /goals
 const router = Router();
 
-// POST /goals
-router.post('/', validateBody(UpsertGoalSchema), upsertGoal);
-
-// GET /goals
-router.get('/', getGoals);
+router.post('/', validate({ body: UpsertGoalSchema }), asyncHandler(upsertGoal));
+router.get('/', asyncHandler(getGoals));
+router.delete('/:id', validate({ params: IdParams }), asyncHandler(deleteGoal));
 
 export default router;
